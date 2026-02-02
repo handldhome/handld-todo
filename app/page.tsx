@@ -69,12 +69,15 @@ export default function CommandCenter() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Header */}
       <header className="py-8 px-4 text-center">
-        <h1 className="text-4xl md:text-5xl font-bold mb-2" style={{ color: NAVY }}>
-          Command Center
+        {/* Logo placeholder - replace src with actual logo */}
+        <img
+          src="/logo.png"
+          alt="Handld"
+          className="h-16 md:h-20 mx-auto mb-4"
+        />
+        <h1 className="text-3xl md:text-4xl font-bold tracking-wide" style={{ color: NAVY }}>
+          COMMAND
         </h1>
-        <p className="text-lg text-slate-600">
-          Your hub for all Handld tools
-        </p>
       </header>
 
       {/* Tools Grid */}
@@ -82,15 +85,11 @@ export default function CommandCenter() {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
           {tools.map((tool) => {
             const Icon = tool.icon;
-            const Component = tool.external ? 'a' : Link;
-            const props = tool.external
-              ? { href: tool.href, target: '_blank', rel: 'noopener noreferrer' }
-              : { href: tool.href };
 
             return (
-              <Component
+              <a
                 key={tool.name}
-                {...props}
+                href={tool.href}
                 className="group bg-white rounded-2xl p-6 md:p-8 shadow-sm hover:shadow-lg transition-all duration-200 hover:-translate-y-1 flex flex-col items-center text-center"
               >
                 <div
@@ -111,12 +110,7 @@ export default function CommandCenter() {
                 <p className="text-sm text-slate-500 hidden md:block">
                   {tool.description}
                 </p>
-                {tool.external && (
-                  <span className="text-xs text-slate-400 mt-2">
-                    ↗ Opens in new tab
-                  </span>
-                )}
-              </Component>
+              </a>
             );
           })}
         </div>
