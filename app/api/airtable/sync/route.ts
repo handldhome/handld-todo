@@ -1,0 +1,217 @@
+import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+import { fetchAllAirtableRecords, updateAirtableRecord } from '@/lib/airtable/client';
+
+// Create a Supabase client with service role for server-side operations
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+interface SyncResult {
+  created: number;
+  skipped: number;
+  errors: string[];
+  syncedBack: number;
+}
+
+// POST /api/airtable/sync
+// Syncs pending quote follow-ups to tasks and syncs completed tasks back to Airtable
+export async function POST(request: Request) {
+  try {
+    const body = await request.json().catch(() => ({}));
+    const userId = body.userId;
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'userId is required' },
+        { status: 400 }
+      );
+    }
+
+    const result: SyncResult = {
+      created: 0,
+      skipped: 0,
+      errors: [],
+      syncedBack: 0,
+    };
+
+    // Get user's inbox list
+    const { data: inboxList } = await supabase
+      .from('lists')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('is_inbox', true)
+      .single();
+
+    if (!inboxList) {
+      return NextResponse.json(
+        { error: 'User inbox not found' },
+        { status: 404 }
+      );
+    }
+
+    // 1. Fetch pending quotes from Airtable
+    const oneHourAgo = new Date();
+    oneHourAgo.setHours(oneHourAgo.getHours() - 1);
+
+    const formula = `AND(
+      OR({Quote Approved} = FALSE(), {Quote Approved} = BLANK()),
+      DATETIME_DIFF(NOW(), LAST_MODIFIED_TIME(), 'hours') >= 1
+    )`.replace(/\s+/g, ' ');
+
+    type AirtableFields = Record<string, unknown>;
+    let quoteRecords: { id: string; createdTime: string; fields: AirtableFields }[] = [];
+    try {
+      quoteRecords = await fetchAllAirtableRecords<AirtableFields>('Quote Requests', {
+        filterByFormula: formula,
+      });
+    } catch (error) {
+      result.errors.push(`Failed to fetch quotes: ${error}`);
+    }
+
+    // 2. Check which records are already synced
+    const { data: existingSyncs } = await supabase
+      .from('airtable_sync')
+      .select('airtable_record_id')
+      .eq('airtable_table', 'Quote Requests');
+
+    const syncedRecordIds = new Set(existingSyncs?.map(s => s.airtable_record_id) || []);
+
+    // 3. Create tasks for new pending quotes
+    for (const record of quoteRecords) {
+      if (syncedRecordIds.has(record.id)) {
+        result.skipped++;
+        continue;
+      }
+
+      const customerName = (record.fields['Customer Name'] as string) ||
+                           (record.fields['Name'] as string) ||
+                           (record.fields['Customer'] as string) ||
+                           'Unknown Customer';
+      const phoneNumber = (record.fields['Phone Number'] as string) ||
+                          (record.fields['Phone'] as string) ||
+                          (record.fields['Mobile'] as string) || '';
+      const quoteLink = (record.fields['Quote Link'] as string) ||
+                        (record.fields['Quote URL'] as string) ||
+                        (record.fields['Link'] as string) || '';
+
+      // Create task
+      const { data: task, error: taskError } = await supabase
+        .from('tasks')
+        .insert({
+          list_id: inboxList.id,
+          user_id: userId,
+          title: `Follow up: ${customerName}${phoneNumber ? ` - ${phoneNumber}` : ''}`,
+          notes: `Quote pending approval for over 1 hour.\n\nCustomer: ${customerName}\nPhone: ${phoneNumber}`,
+          link: quoteLink || null,
+          is_completed: false,
+          is_starred: true, // Star follow-ups for visibility
+          position: 0,
+        })
+        .select()
+        .single();
+
+      if (taskError) {
+        result.errors.push(`Failed to create task for ${customerName}: ${taskError.message}`);
+        continue;
+      }
+
+      // Track the sync
+      const { error: syncError } = await supabase
+        .from('airtable_sync')
+        .insert({
+          task_id: task.id,
+          airtable_table: 'Quote Requests',
+          airtable_record_id: record.id,
+          sync_type: 'quote_followup',
+        });
+
+      if (syncError) {
+        result.errors.push(`Failed to track sync for ${customerName}: ${syncError.message}`);
+      } else {
+        result.created++;
+      }
+    }
+
+    // 4. Sync completed tasks back to Airtable
+    const { data: completedSyncs } = await supabase
+      .from('airtable_sync')
+      .select(`
+        id,
+        airtable_table,
+        airtable_record_id,
+        task_id,
+        tasks!inner(is_completed, completed_at)
+      `)
+      .eq('sync_type', 'quote_followup');
+
+    for (const sync of completedSyncs || []) {
+      const task = (sync as unknown as { tasks: { is_completed: boolean; completed_at: string } }).tasks;
+      if (task?.is_completed) {
+        try {
+          // Update Airtable record to mark as followed up
+          await updateAirtableRecord('Quote Requests', sync.airtable_record_id, {
+            'Follow Up Completed': true,
+            'Follow Up Date': task.completed_at || new Date().toISOString(),
+          });
+          result.syncedBack++;
+        } catch (error) {
+          result.errors.push(`Failed to sync back ${sync.airtable_record_id}: ${error}`);
+        }
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      result,
+      message: `Created ${result.created} tasks, skipped ${result.skipped} existing, synced ${result.syncedBack} completions back`,
+    });
+  } catch (error) {
+    console.error('Airtable sync error:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
+  }
+}
+
+// GET /api/airtable/sync - Get sync status
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const userId = searchParams.get('userId');
+
+  if (!userId) {
+    return NextResponse.json(
+      { error: 'userId is required' },
+      { status: 400 }
+    );
+  }
+
+  try {
+    const { data: syncs, error } = await supabase
+      .from('airtable_sync')
+      .select(`
+        id,
+        airtable_table,
+        airtable_record_id,
+        sync_type,
+        last_synced_at,
+        task_id,
+        tasks(id, title, is_completed)
+      `)
+      .order('last_synced_at', { ascending: false });
+
+    if (error) throw error;
+
+    return NextResponse.json({
+      totalSynced: syncs?.length || 0,
+      syncs,
+    });
+  } catch (error) {
+    console.error('Airtable sync status error:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
+  }
+}
