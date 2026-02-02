@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  /* Handld Color Palette */
+  /* Handld Color Palette - Navy Theme */
   --wl-red: #2A54A1;
   --wl-red-dark: #1E3D7A;
   --wl-sidebar-bg: #FAFAFA;
@@ -12,8 +12,8 @@
   --wl-wood-dark: #8B4513;
   --wl-star-active: #F5A623;
   --wl-star-inactive: #CCCCCC;
-  --wl-checkbox-border: #CCCCCC;
-  --wl-checkbox-checked: #5CB85C;
+  --wl-checkbox-border: #2A54A1;
+  --wl-checkbox-checked: #2A54A1;
   --wl-text-primary: #2A54A1;
   --wl-text-secondary: #2A54A1;
   --wl-text-completed: #7A9BD4;
@@ -49,21 +49,7 @@
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
 
-/* Dark mode - minimal theme */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #1a1a1a;
-    --foreground: #ededed;
-    --wl-sidebar-bg: #242424;
-    --wl-sidebar-selected: #333333;
-    --wl-sidebar-text: #ededed;
-    --wl-text-primary: #ededed;
-    --wl-text-secondary: #a0a0a0;
-    --wl-divider: #3a3a3a;
-  }
-}
-
-/* Theme classes for user preference override */
+/* Theme classes - all use navy text */
 .theme-wood {
   --background: #FFFFFF;
   --content-bg: #f5e6d3;
@@ -77,30 +63,31 @@
 
 .theme-dark {
   --background: #1a1a1a;
-  --foreground: #ededed;
   --content-bg: #242424;
   --wl-sidebar-bg: #1a1a1a;
   --wl-sidebar-selected: #333333;
-  --wl-sidebar-text: #ededed;
-  --wl-text-primary: #ededed;
-  --wl-text-secondary: #a0a0a0;
   --wl-divider: #3a3a3a;
+  /* Keep text navy even in dark mode for readability on light task cards */
 }
 
 body {
   background: var(--background);
-  color: var(--foreground);
+  color: #2A54A1;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
 
-/* Ensure all text is navy */
-input, textarea, select, button, label, p, span, h1, h2, h3, h4, h5, h6, a, li, td, th {
+/* Force navy text everywhere */
+* {
   color: inherit;
 }
 
+input, textarea, select {
+  color: #2A54A1;
+}
+
 input::placeholder, textarea::placeholder {
-  color: var(--wl-text-primary);
-  opacity: 0.6;
+  color: #2A54A1;
+  opacity: 0.5;
 }
 
 /* Main content background - theme aware */
@@ -162,7 +149,7 @@ input::placeholder, textarea::placeholder {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--wl-sidebar-count);
+  background: #2A54A1;
 }
 
 /* Task strikethrough animation */
@@ -177,7 +164,7 @@ input::placeholder, textarea::placeholder {
 
 .task-completed .task-title {
   position: relative;
-  color: var(--wl-text-completed);
+  color: #7A9BD4;
 }
 
 .task-completed .task-title::after {
@@ -186,7 +173,7 @@ input::placeholder, textarea::placeholder {
   left: 0;
   top: 50%;
   height: 1px;
-  background: var(--wl-text-completed);
+  background: #7A9BD4;
   animation: strikethrough 200ms ease-out forwards;
 }
 
@@ -225,18 +212,18 @@ input::placeholder, textarea::placeholder {
 
 /* Focus visible for accessibility */
 *:focus-visible {
-  outline: 2px solid var(--wl-red);
+  outline: 2px solid #2A54A1;
   outline-offset: 2px;
 }
 
 /* Keyboard focus indicator for task items */
 .task-item-focused {
-  box-shadow: inset 0 0 0 2px var(--wl-red);
+  box-shadow: inset 0 0 0 2px #2A54A1;
 }
 
 /* Smooth transitions */
-* {
-  transition-property: background-color, border-color, color, opacity;
+a, button, input, textarea, select {
+  transition-property: background-color, border-color, opacity;
   transition-duration: 150ms;
   transition-timing-function: ease-out;
 }
