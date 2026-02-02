@@ -6,17 +6,17 @@
   --wl-red-dark: #1E3D7A;
   --wl-sidebar-bg: #FAFAFA;
   --wl-sidebar-selected: #FFFFFF;
-  --wl-sidebar-text: #333333;
-  --wl-sidebar-count: #999999;
+  --wl-sidebar-text: #2A54A1;
+  --wl-sidebar-count: #2A54A1;
   --wl-wood-light: #DEB887;
   --wl-wood-dark: #8B4513;
   --wl-star-active: #F5A623;
   --wl-star-inactive: #CCCCCC;
   --wl-checkbox-border: #CCCCCC;
   --wl-checkbox-checked: #5CB85C;
-  --wl-text-primary: #333333;
-  --wl-text-secondary: #666666;
-  --wl-text-completed: #999999;
+  --wl-text-primary: #2A54A1;
+  --wl-text-secondary: #2A54A1;
+  --wl-text-completed: #7A9BD4;
   --wl-divider: #E5E5E5;
 
   /* Layout */
@@ -26,7 +26,7 @@
 
   /* Backgrounds */
   --background: #FFFFFF;
-  --foreground: #333333;
+  --foreground: #2A54A1;
 }
 
 @theme inline {
