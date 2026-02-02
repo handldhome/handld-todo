@@ -260,7 +260,8 @@ export function TaskDetailPanel({
             type="date"
             value={dueDate}
             onChange={(e) => handleDateChange(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2A54A1] focus:border-transparent"
+            onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2A54A1] focus:border-transparent cursor-pointer"
             style={{ color: NAVY }}
           />
         </div>
