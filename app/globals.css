@@ -93,6 +93,16 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
 
+/* Ensure all text is navy */
+input, textarea, select, button, label, p, span, h1, h2, h3, h4, h5, h6, a, li, td, th {
+  color: inherit;
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--wl-text-primary);
+  opacity: 0.6;
+}
+
 /* Main content background - theme aware */
 .content-background {
   background-color: var(--content-bg, #f5e6d3);
