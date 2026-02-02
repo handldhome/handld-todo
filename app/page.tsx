@@ -1,17 +1,34 @@
 'use client';
 
-import Link from 'next/link';
+import { useState, useEffect } from 'react';
 import {
   Calendar,
-  Users,
   Briefcase,
   UserCheck,
   CheckSquare,
   Globe,
-  Wrench
+  Wrench,
+  Cloud,
+  Sun,
+  CloudRain,
+  CloudSnow,
+  CloudLightning,
+  Wind,
 } from 'lucide-react';
 
 const NAVY = '#2A54A1';
+const WEATHER_API_KEY = '5fef1daf633f6e100c89a58c25220c72';
+const ZIP_CODE = '91103';
+
+interface WeatherData {
+  temp: number;
+  feels_like: number;
+  description: string;
+  icon: string;
+  city: string;
+  humidity: number;
+  wind: number;
+}
 
 const tools = [
   {
@@ -52,7 +69,46 @@ const tools = [
   },
 ];
 
+function getWeatherIcon(iconCode: string) {
+  if (iconCode.includes('01')) return Sun;
+  if (iconCode.includes('02') || iconCode.includes('03') || iconCode.includes('04')) return Cloud;
+  if (iconCode.includes('09') || iconCode.includes('10')) return CloudRain;
+  if (iconCode.includes('11')) return CloudLightning;
+  if (iconCode.includes('13')) return CloudSnow;
+  return Wind;
+}
+
 export default function CommandCenter() {
+  const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchWeather() {
+      try {
+        const res = await fetch(
+          `https://api.openweathermap.org/data/2.5/weather?zip=${ZIP_CODE},us&appid=${WEATHER_API_KEY}&units=imperial`
+        );
+        const data = await res.json();
+        setWeather({
+          temp: Math.round(data.main.temp),
+          feels_like: Math.round(data.main.feels_like),
+          description: data.weather[0].description,
+          icon: data.weather[0].icon,
+          city: data.name,
+          humidity: data.main.humidity,
+          wind: Math.round(data.wind.speed),
+        });
+      } catch (error) {
+        console.error('Failed to fetch weather:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchWeather();
+  }, []);
+
+  const WeatherIcon = weather ? getWeatherIcon(weather.icon) : Cloud;
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#FFFFF2' }}>
       {/* Header */}
@@ -66,6 +122,42 @@ export default function CommandCenter() {
           Command
         </h1>
       </header>
+
+      {/* Weather Widget */}
+      <div className="max-w-5xl mx-auto px-4 mb-6">
+        <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm flex items-center justify-between">
+          {loading ? (
+            <p className="text-slate-400">Loading weather...</p>
+          ) : weather ? (
+            <>
+              <div className="flex items-center gap-4">
+                <div
+                  className="w-14 h-14 md:w-16 md:h-16 rounded-xl flex items-center justify-center"
+                  style={{ backgroundColor: '#FEF3C7' }}
+                >
+                  <WeatherIcon className="w-8 h-8 md:w-9 md:h-9 text-amber-500" />
+                </div>
+                <div>
+                  <p className="text-2xl md:text-3xl font-bold" style={{ color: NAVY }}>
+                    {weather.temp}°F
+                  </p>
+                  <p className="text-sm text-slate-500 capitalize">
+                    {weather.description}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right hidden md:block">
+                <p className="text-sm text-slate-500">{weather.city}</p>
+                <p className="text-sm text-slate-400">
+                  Feels like {weather.feels_like}°F • Wind {weather.wind} mph
+                </p>
+              </div>
+            </>
+          ) : (
+            <p className="text-slate-400">Weather unavailable</p>
+          )}
+        </div>
+      </div>
 
       {/* Tools Grid */}
       <main className="max-w-5xl mx-auto px-4 pb-12">
