@@ -43,6 +43,7 @@ import {
   ChevronRight,
   Keyboard,
   GripVertical,
+  LayoutGrid,
 } from 'lucide-react';
 import type { List } from '@/types';
 
@@ -458,6 +459,17 @@ export function Sidebar() {
               <X className="w-5 h-5" />
             </button>
           </div>
+        </div>
+
+        {/* Command Center button */}
+        <div className="px-1.5 py-2 border-b border-[var(--wl-divider)]">
+          <Link
+            href="/"
+            className="flex items-center gap-2.5 px-2.5 py-2 rounded-md bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 transition-colors"
+          >
+            <LayoutGrid className="w-5 h-5 text-[#2A54A1]" />
+            <span className="text-sm font-medium text-[#2A54A1]">Command Center</span>
+          </Link>
         </div>
 
         {/* Smart lists */}
