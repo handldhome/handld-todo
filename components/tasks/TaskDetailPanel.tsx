@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
@@ -16,6 +16,8 @@ import {
   Plus,
   Circle,
   CheckCircle2,
+  Link2,
+  Repeat,
 } from 'lucide-react';
 import type { Task, List, Subtask } from '@/types';
 
@@ -37,8 +39,11 @@ export function TaskDetailPanel({
 }: TaskDetailPanelProps) {
   const [title, setTitle] = useState(task.title);
   const [notes, setNotes] = useState(task.notes || '');
+  const [link, setLink] = useState(task.link || '');
   const [dueDate, setDueDate] = useState(task.due_date || '');
+  const [recurrence, setRecurrence] = useState(task.recurrence?.frequency || '');
   const [newSubtask, setNewSubtask] = useState('');
+  const subtaskInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
   const queryClient = useQueryClient();
 
@@ -46,7 +51,9 @@ export function TaskDetailPanel({
   useEffect(() => {
     setTitle(task.title);
     setNotes(task.notes || '');
+    setLink(task.link || '');
     setDueDate(task.due_date || '');
+    setRecurrence(task.recurrence?.frequency || '');
   }, [task]);
 
   // Fetch lists for move dropdown
@@ -146,10 +153,30 @@ export function TaskDetailPanel({
     }
   }, [notes, task.notes, onUpdate]);
 
+  // Auto-save link
+  useEffect(() => {
+    if (link !== (task.link || '')) {
+      const timeout = setTimeout(() => {
+        onUpdate({ link: link || null });
+      }, 500);
+      return () => clearTimeout(timeout);
+    }
+  }, [link, task.link, onUpdate]);
+
   // Handle date change
   const handleDateChange = (value: string) => {
     setDueDate(value);
     onUpdate({ due_date: value || null });
+  };
+
+  // Handle recurrence change
+  const handleRecurrenceChange = (value: string) => {
+    setRecurrence(value);
+    if (value) {
+      onUpdate({ recurrence: { frequency: value as 'daily' | 'weekly' | 'monthly' | 'annually' | 'custom' } });
+    } else {
+      onUpdate({ recurrence: null });
+    }
   };
 
   // Handle list change
@@ -190,7 +217,7 @@ export function TaskDetailPanel({
       animate={{ x: 0 }}
       exit={{ x: '100%' }}
       transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-      className="w-[400px] h-full bg-white border-l border-gray-200 flex flex-col shrink-0"
+      className="w-[800px] h-full bg-white border-l border-gray-200 flex flex-col shrink-0"
       style={{ color: NAVY }}
     >
       {/* Header */}
@@ -236,6 +263,35 @@ export function TaskDetailPanel({
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2A54A1] focus:border-transparent"
             style={{ color: NAVY }}
           />
+        </div>
+
+        {/* Recurrence */}
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-sm font-medium" style={{ color: NAVY }}>
+            <Repeat className="w-4 h-4" />
+            Repeat
+          </label>
+          <select
+            value={recurrence}
+            onChange={(e) => handleRecurrenceChange(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2A54A1] focus:border-transparent"
+            style={{ color: NAVY }}
+          >
+            <option value="">No repeat</option>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="annually">Annually</option>
+            <option value="custom">Custom...</option>
+          </select>
+          {recurrence && (
+            <p className="text-xs" style={{ color: NAVY }}>
+              This task will repeat {recurrence === 'daily' ? 'every day' :
+                recurrence === 'weekly' ? 'every week' :
+                recurrence === 'monthly' ? 'every month' :
+                recurrence === 'annually' ? 'every year' : 'on a custom schedule'}
+            </p>
+          )}
         </div>
 
         {/* Move to List */}
@@ -315,8 +371,13 @@ export function TaskDetailPanel({
 
           {/* Add subtask input */}
           <form onSubmit={handleAddSubtask} className="flex items-center gap-2">
-            <Plus className="w-4 h-4 shrink-0" style={{ color: NAVY }} />
+            <Plus
+              className="w-4 h-4 shrink-0 cursor-pointer"
+              style={{ color: NAVY }}
+              onClick={() => subtaskInputRef.current?.focus()}
+            />
             <input
+              ref={subtaskInputRef}
               type="text"
               value={newSubtask}
               onChange={(e) => setNewSubtask(e.target.value)}
@@ -335,6 +396,34 @@ export function TaskDetailPanel({
               </button>
             )}
           </form>
+        </div>
+
+        {/* Link */}
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-sm font-medium" style={{ color: NAVY }}>
+            <Link2 className="w-4 h-4" />
+            Link
+          </label>
+          <input
+            type="url"
+            value={link}
+            onChange={(e) => setLink(e.target.value)}
+            placeholder="Add a link (e.g., Airtable quote viewer)..."
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2A54A1] focus:border-transparent"
+            style={{ color: NAVY }}
+          />
+          {link && (
+            <a
+              href={link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs hover:underline"
+              style={{ color: NAVY }}
+            >
+              Open link
+              <span className="text-[10px]">↗</span>
+            </a>
+          )}
         </div>
 
         {/* Notes */}

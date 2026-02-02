@@ -36,9 +36,11 @@ export interface Task {
   user_id: string;
   title: string;
   notes: string | null;
+  link: string | null;
   due_date: string | null;
   due_time: string | null;
   reminder_at: string | null;
+  recurrence: RecurrenceRule | null;
   is_completed: boolean;
   is_starred: boolean;
   position: number;
@@ -48,6 +50,14 @@ export interface Task {
   // Relations
   subtasks?: Subtask[];
   list?: List;
+}
+
+export interface RecurrenceRule {
+  frequency: 'daily' | 'weekly' | 'monthly' | 'annually' | 'custom';
+  interval?: number; // e.g., every 2 weeks
+  daysOfWeek?: number[]; // 0-6 for Sunday-Saturday
+  dayOfMonth?: number;
+  endDate?: string;
 }
 
 export interface Subtask {
@@ -73,8 +83,10 @@ export interface UpdateTaskInput {
   id: string;
   title?: string;
   notes?: string;
+  link?: string;
   due_date?: string;
   due_time?: string;
+  recurrence?: RecurrenceRule;
   is_completed?: boolean;
   is_starred?: boolean;
   list_id?: string;

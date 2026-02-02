@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, forwardRef } from 'react';
+import { useState, useEffect, forwardRef, useRef, useImperativeHandle } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -21,6 +21,10 @@ export const TaskQuickAdd = forwardRef<HTMLInputElement, TaskQuickAddProps>(
     const { user } = useAuth();
     const supabase = createClient();
     const queryClient = useQueryClient();
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    // Forward the ref
+    useImperativeHandle(ref, () => inputRef.current as HTMLInputElement);
 
     // Get inbox list if needed
     const [effectiveListId, setEffectiveListId] = useState<string | undefined>(listId);
@@ -94,11 +98,16 @@ export const TaskQuickAdd = forwardRef<HTMLInputElement, TaskQuickAddProps>(
       }
     };
 
+    const handleContainerClick = () => {
+      inputRef.current?.focus();
+    };
+
     return (
       <form onSubmit={handleSubmit} className="p-4">
         <div
+          onClick={handleContainerClick}
           className={`
-            flex items-center gap-3 px-4 py-3 rounded-lg
+            flex items-center gap-3 px-4 py-3 rounded-lg cursor-text
             bg-white/80 backdrop-blur-sm border
             transition-all duration-200
             ${isFocused
@@ -107,9 +116,9 @@ export const TaskQuickAdd = forwardRef<HTMLInputElement, TaskQuickAddProps>(
             }
           `}
         >
-          <Plus className="w-5 h-5" style={{ color: NAVY }} />
+          <Plus className="w-5 h-5 cursor-pointer" style={{ color: NAVY }} onClick={handleContainerClick} />
           <input
-            ref={ref}
+            ref={inputRef}
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}

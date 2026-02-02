@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useSettingsStore } from '@/lib/stores/settingsStore';
@@ -12,6 +12,23 @@ import { useKeyboardStore } from '@/lib/stores/keyboardStore';
 import { CreateListModal } from '@/components/modals/CreateListModal';
 import { SettingsModal } from '@/components/modals/SettingsModal';
 import { KeyboardShortcutsModal } from '@/components/modals/KeyboardShortcutsModal';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import {
   Inbox,
   ListTodo,
@@ -25,6 +42,7 @@ import {
   X,
   ChevronRight,
   Keyboard,
+  GripVertical,
 } from 'lucide-react';
 import type { List } from '@/types';
 
@@ -36,6 +54,118 @@ const smartLists = [
   { id: 'completed', name: 'Completed', icon: CheckCircle2, path: '/completed' },
 ];
 
+interface SortableListItemProps {
+  list: List & { tasks: { count: number }[] };
+  active: boolean;
+  isEditing: boolean;
+  editingListName: string;
+  editInputRef: React.RefObject<HTMLInputElement | null>;
+  onEditingNameChange: (name: string) => void;
+  onSaveEdit: () => void;
+  onEditKeyDown: (e: React.KeyboardEvent) => void;
+  onStartEdit: (list: List & { tasks: { count: number }[] }) => void;
+  onCloseSidebar: () => void;
+}
+
+function SortableListItem({
+  list,
+  active,
+  isEditing,
+  editingListName,
+  editInputRef,
+  onEditingNameChange,
+  onSaveEdit,
+  onEditKeyDown,
+  onStartEdit,
+  onCloseSidebar,
+}: SortableListItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: list.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const count = list.tasks?.[0]?.count || 0;
+
+  if (isEditing) {
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        className="flex items-center gap-2.5 px-2.5 py-2 rounded-md bg-[var(--wl-sidebar-selected)] shadow-sm"
+      >
+        <div
+          className="w-3 h-3 rounded-full"
+          style={{ backgroundColor: list.color }}
+        />
+        <input
+          ref={editInputRef}
+          type="text"
+          value={editingListName}
+          onChange={(e) => onEditingNameChange(e.target.value)}
+          onBlur={onSaveEdit}
+          onKeyDown={onEditKeyDown}
+          className="flex-1 text-sm font-medium text-[var(--wl-sidebar-text)] bg-transparent outline-none border-b border-[var(--wl-sidebar-text)]"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`
+        flex items-center gap-2.5 px-2.5 py-2 rounded-md
+        transition-colors group
+        ${active
+          ? 'bg-[var(--wl-sidebar-selected)] shadow-sm'
+          : 'hover:bg-[var(--wl-sidebar-selected)]/50'
+        }
+      `}
+    >
+      <div
+        {...attributes}
+        {...listeners}
+        className="cursor-grab opacity-0 group-hover:opacity-100 transition-opacity"
+      >
+        <GripVertical className="w-3 h-3 text-[var(--wl-sidebar-count)]" />
+      </div>
+      <Link
+        href={`/list/${list.id}`}
+        onClick={onCloseSidebar}
+        onDoubleClick={(e) => {
+          e.preventDefault();
+          onStartEdit(list);
+        }}
+        className="flex-1 flex items-center gap-2.5"
+      >
+        <div
+          className="w-3 h-3 rounded-full"
+          style={{ backgroundColor: list.color }}
+        />
+        <span className="flex-1 text-sm font-medium text-[var(--wl-sidebar-text)] truncate">
+          {list.name}
+        </span>
+        {count > 0 && (
+          <span className="text-xs text-[var(--wl-sidebar-count)]">
+            {count}
+          </span>
+        )}
+      </Link>
+    </div>
+  );
+}
+
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -45,9 +175,13 @@ export function Sidebar() {
   const { enabled: keyboardEnabled, setShowShortcutsModal } = useKeyboardStore();
   const [showCreateList, setShowCreateList] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [editingListId, setEditingListId] = useState<string | null>(null);
+  const [editingListName, setEditingListName] = useState('');
   const pendingKey = useRef<string | null>(null);
   const pendingTimeout = useRef<NodeJS.Timeout | null>(null);
+  const editInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
+  const queryClient = useQueryClient();
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -202,6 +336,82 @@ export function Sidebar() {
     enabled: !!user,
   });
 
+  // Update list mutation
+  const updateList = useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+      const { error } = await supabase
+        .from('lists')
+        .update({ name })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lists'] });
+      setEditingListId(null);
+    },
+  });
+
+  // Reorder lists mutation
+  const reorderLists = useMutation({
+    mutationFn: async (reorderedLists: { id: string; position: number }[]) => {
+      for (const list of reorderedLists) {
+        const { error } = await supabase
+          .from('lists')
+          .update({ position: list.position })
+          .eq('id', list.id);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lists'] });
+    },
+  });
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = lists.findIndex((list) => list.id === active.id);
+      const newIndex = lists.findIndex((list) => list.id === over.id);
+      const newLists = arrayMove(lists, oldIndex, newIndex);
+      const updates = newLists.map((list, index) => ({ id: list.id, position: index }));
+      reorderLists.mutate(updates);
+    }
+  };
+
+  const handleStartEdit = (list: List & { tasks: { count: number }[] }) => {
+    setEditingListId(list.id);
+    setEditingListName(list.name);
+    setTimeout(() => editInputRef.current?.focus(), 0);
+  };
+
+  const handleSaveEdit = () => {
+    if (editingListId && editingListName.trim()) {
+      updateList.mutate({ id: editingListId, name: editingListName.trim() });
+    } else {
+      setEditingListId(null);
+    }
+  };
+
+  const handleEditKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSaveEdit();
+    } else if (e.key === 'Escape') {
+      setEditingListId(null);
+    }
+  };
+
   const isActive = (path: string) => pathname === path;
 
   return (
@@ -298,52 +508,45 @@ export function Sidebar() {
           <div className="my-2 mx-3 border-t border-[var(--wl-divider)]" />
 
           {/* User lists */}
-          <div className="px-1.5 space-y-0.5">
-            {lists.map((list) => {
-              const active = pathname === `/list/${list.id}`;
-              const count = list.tasks?.[0]?.count || 0;
-
-              return (
-                <Link
-                  key={list.id}
-                  href={`/list/${list.id}`}
-                  onClick={() => setIsOpen(false)}
-                  className={`
-                    flex items-center gap-2.5 px-2.5 py-2 rounded-md
-                    transition-colors
-                    ${active
-                      ? 'bg-[var(--wl-sidebar-selected)] shadow-sm'
-                      : 'hover:bg-[var(--wl-sidebar-selected)]/50'
-                    }
-                  `}
-                >
-                  <div
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: list.color }}
-                  />
-                  <span className="flex-1 text-sm font-medium text-[var(--wl-sidebar-text)] truncate">
-                    {list.name}
-                  </span>
-                  {count > 0 && (
-                    <span className="text-xs text-[var(--wl-sidebar-count)]">
-                      {count}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
-
-            {/* Create new list button */}
-            <button
-              onClick={() => setShowCreateList(true)}
-              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md
-                text-[var(--wl-sidebar-count)] hover:bg-[var(--wl-sidebar-selected)]/50
-                transition-colors"
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={lists.map((l) => l.id)}
+              strategy={verticalListSortingStrategy}
             >
-              <Plus className="w-4 h-4" />
-              <span className="text-sm">Create new list</span>
-            </button>
-          </div>
+              <div className="px-1.5 space-y-0.5">
+                {lists.map((list) => (
+                  <SortableListItem
+                    key={list.id}
+                    list={list}
+                    active={pathname === `/list/${list.id}`}
+                    isEditing={editingListId === list.id}
+                    editingListName={editingListName}
+                    editInputRef={editInputRef}
+                    onEditingNameChange={setEditingListName}
+                    onSaveEdit={handleSaveEdit}
+                    onEditKeyDown={handleEditKeyDown}
+                    onStartEdit={handleStartEdit}
+                    onCloseSidebar={() => setIsOpen(false)}
+                  />
+                ))}
+
+                {/* Create new list button */}
+                <button
+                  onClick={() => setShowCreateList(true)}
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md
+                    text-[var(--wl-sidebar-count)] hover:bg-[var(--wl-sidebar-selected)]/50
+                    transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span className="text-sm">Create new list</span>
+                </button>
+              </div>
+            </SortableContext>
+          </DndContext>
         </nav>
 
         {/* Footer */}
