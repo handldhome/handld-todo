@@ -1,26 +1,238 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Wunderlist Color Palette */
+  --wl-red: #D64545;
+  --wl-red-dark: #B83535;
+  --wl-sidebar-bg: #FAFAFA;
+  --wl-sidebar-selected: #FFFFFF;
+  --wl-sidebar-text: #333333;
+  --wl-sidebar-count: #999999;
+  --wl-wood-light: #DEB887;
+  --wl-wood-dark: #8B4513;
+  --wl-star-active: #F5A623;
+  --wl-star-inactive: #CCCCCC;
+  --wl-checkbox-border: #CCCCCC;
+  --wl-checkbox-checked: #5CB85C;
+  --wl-text-primary: #333333;
+  --wl-text-secondary: #666666;
+  --wl-text-completed: #999999;
+  --wl-divider: #E5E5E5;
+
+  /* Layout */
+  --sidebar-width: 280px;
+  --detail-panel-width: 400px;
+  --task-item-height: 52px;
+
+  /* Backgrounds */
+  --background: #FFFFFF;
+  --foreground: #333333;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-wl-red: var(--wl-red);
+  --color-wl-red-dark: var(--wl-red-dark);
+  --color-wl-sidebar-bg: var(--wl-sidebar-bg);
+  --color-wl-sidebar-selected: var(--wl-sidebar-selected);
+  --color-wl-sidebar-text: var(--wl-sidebar-text);
+  --color-wl-sidebar-count: var(--wl-sidebar-count);
+  --color-wl-star-active: var(--wl-star-active);
+  --color-wl-star-inactive: var(--wl-star-inactive);
+  --color-wl-checkbox-border: var(--wl-checkbox-border);
+  --color-wl-checkbox-checked: var(--wl-checkbox-checked);
+  --color-wl-text-primary: var(--wl-text-primary);
+  --color-wl-text-secondary: var(--wl-text-secondary);
+  --color-wl-text-completed: var(--wl-text-completed);
+  --color-wl-divider: var(--wl-divider);
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
 
+/* Dark mode - minimal theme */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: #1a1a1a;
     --foreground: #ededed;
+    --wl-sidebar-bg: #242424;
+    --wl-sidebar-selected: #333333;
+    --wl-sidebar-text: #ededed;
+    --wl-text-primary: #ededed;
+    --wl-text-secondary: #a0a0a0;
+    --wl-divider: #3a3a3a;
   }
+}
+
+/* Theme classes for user preference override */
+.theme-wood {
+  --background: #FFFFFF;
+  --content-bg: #f5e6d3;
+}
+
+.theme-minimal {
+  --background: #FFFFFF;
+  --content-bg: #f8f9fa;
+  --wl-sidebar-bg: #FFFFFF;
+}
+
+.theme-dark {
+  --background: #1a1a1a;
+  --foreground: #ededed;
+  --content-bg: #242424;
+  --wl-sidebar-bg: #1a1a1a;
+  --wl-sidebar-selected: #333333;
+  --wl-sidebar-text: #ededed;
+  --wl-text-primary: #ededed;
+  --wl-text-secondary: #a0a0a0;
+  --wl-divider: #3a3a3a;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+/* Main content background - theme aware */
+.content-background {
+  background-color: var(--content-bg, #f5e6d3);
+}
+
+/* Wood texture background for main task area */
+.theme-wood .content-background {
+  background-color: #f5e6d3;
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 50px,
+      rgba(139, 69, 19, 0.03) 50px,
+      rgba(139, 69, 19, 0.03) 51px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 10px,
+      rgba(222, 184, 135, 0.1) 10px,
+      rgba(222, 184, 135, 0.1) 11px
+    ),
+    linear-gradient(
+      90deg,
+      #f5e6d3 0%,
+      #efe0cc 25%,
+      #f5e6d3 50%,
+      #efe0cc 75%,
+      #f5e6d3 100%
+    );
+}
+
+/* Minimal theme - clean white */
+.theme-minimal .content-background {
+  background-color: #f8f9fa;
+}
+
+/* Dark theme background */
+.theme-dark .content-background {
+  background-color: #242424;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--wl-divider);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--wl-sidebar-count);
+}
+
+/* Task strikethrough animation */
+@keyframes strikethrough {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+.task-completed .task-title {
+  position: relative;
+  color: var(--wl-text-completed);
+}
+
+.task-completed .task-title::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  height: 1px;
+  background: var(--wl-text-completed);
+  animation: strikethrough 200ms ease-out forwards;
+}
+
+/* Checkbox animation */
+@keyframes checkmark-draw {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes checkbox-fill {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+/* Star animation */
+@keyframes star-bounce {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+.star-active {
+  animation: star-bounce 200ms ease-out;
+}
+
+/* Focus visible for accessibility */
+*:focus-visible {
+  outline: 2px solid var(--wl-red);
+  outline-offset: 2px;
+}
+
+/* Smooth transitions */
+* {
+  transition-property: background-color, border-color, color, opacity;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+/* Disable transitions for reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
