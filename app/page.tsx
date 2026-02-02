@@ -16,50 +16,38 @@ const NAVY = '#2A54A1';
 const tools = [
   {
     name: 'Schedule',
-    description: 'View and manage schedules',
     icon: Calendar,
-    href: 'https://schedule.handldhome.com/?key=alia',
-    external: true,
+    href: 'https://schedule.handldhome.com/admin?tab=schedule',
     color: '#3B82F6', // blue
   },
   {
-    name: 'Tech Schedule',
-    description: 'Technician scheduling',
+    name: 'Tech Schedules',
     icon: Wrench,
-    href: 'https://schedule.handldhome.com/?key=alia',
-    external: true,
+    href: 'https://schedule.handldhome.com/admin?tab=tech-schedules',
     color: '#10B981', // green
   },
   {
-    name: 'Jobs List',
-    description: 'View all jobs',
+    name: 'Jobs',
     icon: Briefcase,
-    href: 'https://schedule.handldhome.com/?key=alia',
-    external: true,
+    href: 'https://schedule.handldhome.com/admin?tab=jobs',
     color: '#F59E0B', // amber
   },
   {
     name: 'Tech Availability',
-    description: 'Check tech availability',
     icon: UserCheck,
-    href: 'https://schedule.handldhome.com/?key=alia',
-    external: true,
+    href: 'https://schedule.handldhome.com/admin?tab=availability',
     color: '#8B5CF6', // purple
   },
   {
     name: 'To Do',
-    description: 'Tasks and reminders',
     icon: CheckSquare,
     href: '/inbox',
-    external: false,
     color: '#EC4899', // pink
   },
   {
     name: 'Website',
-    description: 'handldhome.com',
     icon: Globe,
     href: 'https://handldhome.com',
-    external: true,
     color: '#6366F1', // indigo
   },
 ];
@@ -69,14 +57,13 @@ export default function CommandCenter() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Header */}
       <header className="py-8 px-4 text-center">
-        {/* Logo placeholder - replace src with actual logo */}
         <img
           src="/logo.png"
           alt="Handld"
-          className="h-16 md:h-20 mx-auto mb-4"
+          className="h-24 md:h-32 mx-auto mb-3"
         />
-        <h1 className="text-3xl md:text-4xl font-bold tracking-wide" style={{ color: NAVY }}>
-          COMMAND
+        <h1 className="text-xl md:text-2xl font-semibold tracking-widest uppercase" style={{ color: NAVY }}>
+          Command
         </h1>
       </header>
 
@@ -102,14 +89,11 @@ export default function CommandCenter() {
                   />
                 </div>
                 <h2
-                  className="text-lg md:text-xl font-semibold mb-1"
+                  className="text-lg md:text-xl font-semibold"
                   style={{ color: NAVY }}
                 >
                   {tool.name}
                 </h2>
-                <p className="text-sm text-slate-500 hidden md:block">
-                  {tool.description}
-                </p>
               </a>
             );
           })}
