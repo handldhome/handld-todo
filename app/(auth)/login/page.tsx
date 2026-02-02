@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Mail, Lock, Loader2 } from 'lucide-react';
 
+const NAVY = '#2A54A1';
+
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -69,29 +71,30 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-xl p-8">
+    <div className="bg-white rounded-lg shadow-xl p-8" style={{ color: NAVY }}>
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-semibold text-[var(--wl-text-primary)]">
+        <h1 className="text-2xl font-semibold" style={{ color: NAVY }}>
           Welcome back
         </h1>
-        <p className="text-[var(--wl-text-secondary)] mt-2">
+        <p className="mt-2" style={{ color: NAVY }}>
           Sign in to your account
         </p>
       </div>
 
       <form onSubmit={handleLogin} className="space-y-4">
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-[var(--wl-text-primary)] mb-1">
+          <label htmlFor="email" className="block text-sm font-medium mb-1" style={{ color: NAVY }}>
             Email
           </label>
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--wl-sidebar-count)]" />
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: NAVY }} />
             <input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-[var(--wl-divider)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--wl-red)] focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2A54A1] focus:border-transparent"
+              style={{ color: NAVY }}
               placeholder="you@example.com"
               required
             />
@@ -99,17 +102,18 @@ export default function LoginPage() {
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-[var(--wl-text-primary)] mb-1">
+          <label htmlFor="password" className="block text-sm font-medium mb-1" style={{ color: NAVY }}>
             Password
           </label>
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--wl-sidebar-count)]" />
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: NAVY }} />
             <input
               id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-[var(--wl-divider)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--wl-red)] focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2A54A1] focus:border-transparent"
+              style={{ color: NAVY }}
               placeholder="Enter your password"
               required
             />
@@ -123,7 +127,8 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full py-2 px-4 bg-[var(--wl-red)] hover:bg-[var(--wl-red-dark)] text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full py-2 px-4 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          style={{ backgroundColor: NAVY }}
         >
           {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
           Sign in
@@ -134,15 +139,16 @@ export default function LoginPage() {
         <button
           onClick={handleMagicLink}
           disabled={isLoading}
-          className="w-full py-2 px-4 border border-[var(--wl-divider)] hover:bg-[var(--wl-sidebar-bg)] text-[var(--wl-text-primary)] font-medium rounded-lg transition-colors disabled:opacity-50"
+          className="w-full py-2 px-4 border border-gray-200 hover:bg-gray-50 font-medium rounded-lg transition-colors disabled:opacity-50"
+          style={{ color: NAVY }}
         >
           Send magic link
         </button>
       </div>
 
-      <p className="mt-6 text-center text-sm text-[var(--wl-text-secondary)]">
+      <p className="mt-6 text-center text-sm" style={{ color: NAVY }}>
         Don&apos;t have an account?{' '}
-        <Link href="/signup" className="text-[var(--wl-red)] hover:underline font-medium">
+        <Link href="/signup" className="hover:underline font-medium" style={{ color: NAVY }}>
           Sign up
         </Link>
       </p>

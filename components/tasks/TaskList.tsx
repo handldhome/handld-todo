@@ -245,7 +245,7 @@ export function TaskList({ listId, listType, title }: TaskListProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="animate-pulse text-[var(--wl-text-secondary)]">
+        <div className="animate-pulse" style={{ color: '#2A54A1' }}>
           Loading tasks...
         </div>
       </div>
@@ -265,12 +265,12 @@ export function TaskList({ listId, listType, title }: TaskListProps) {
         <div className="flex-1 overflow-y-auto">
           {tasks.length === 0 && completedTasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center p-8">
-              <p className="text-[var(--wl-text-secondary)] text-lg">
+              <p className="text-lg" style={{ color: '#2A54A1' }}>
                 {listType === 'completed'
                   ? 'No completed tasks yet'
                   : 'No tasks yet. Press N to add one!'}
               </p>
-              <p className="text-sm text-[var(--wl-sidebar-count)] mt-2">
+              <p className="text-sm mt-2" style={{ color: '#2A54A1' }}>
                 Press ? for keyboard shortcuts
               </p>
             </div>
@@ -302,7 +302,8 @@ export function TaskList({ listId, listType, title }: TaskListProps) {
                 <div className="mt-6">
                   <button
                     onClick={() => setShowCompleted(!showCompleted)}
-                    className="flex items-center gap-2 px-3 py-2 text-sm text-[var(--wl-text-secondary)] hover:text-[var(--wl-text-primary)] transition-colors"
+                    className="flex items-center gap-2 px-3 py-2 text-sm transition-colors"
+                    style={{ color: '#2A54A1' }}
                   >
                     {showCompleted ? (
                       <ChevronDown className="w-4 h-4" />

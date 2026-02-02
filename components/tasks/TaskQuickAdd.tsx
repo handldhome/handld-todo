@@ -7,6 +7,8 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { Plus } from 'lucide-react';
 import type { SmartListType } from '@/types';
 
+const NAVY = '#2A54A1';
+
 interface TaskQuickAddProps {
   listId?: string;
   listType?: SmartListType;
@@ -100,12 +102,12 @@ export const TaskQuickAdd = forwardRef<HTMLInputElement, TaskQuickAddProps>(
             bg-white/80 backdrop-blur-sm border
             transition-all duration-200
             ${isFocused
-              ? 'border-[var(--wl-red)] shadow-sm'
+              ? 'border-[#2A54A1] shadow-sm'
               : 'border-transparent hover:bg-white hover:shadow-sm'
             }
           `}
         >
-          <Plus className="w-5 h-5 text-[var(--wl-sidebar-count)]" />
+          <Plus className="w-5 h-5" style={{ color: NAVY }} />
           <input
             ref={ref}
             type="text"
@@ -114,7 +116,8 @@ export const TaskQuickAdd = forwardRef<HTMLInputElement, TaskQuickAddProps>(
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             placeholder="Add a task... (Press N)"
-            className="flex-1 bg-transparent outline-none text-[15px] text-[var(--wl-text-primary)] placeholder:text-[var(--wl-sidebar-count)]"
+            className="flex-1 bg-transparent outline-none text-[15px]"
+            style={{ color: NAVY }}
             disabled={createTask.isPending}
           />
         </div>

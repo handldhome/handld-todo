@@ -5,6 +5,9 @@ import { TaskStar } from './TaskStar';
 import { Calendar, ListChecks } from 'lucide-react';
 import type { Task } from '@/types';
 
+const NAVY = '#2A54A1';
+const NAVY_COMPLETED = '#7A9BD4';
+
 interface TaskItemProps {
   task: Task;
   isSelected: boolean;
@@ -55,11 +58,12 @@ export function TaskItem({
         bg-white/80 backdrop-blur-sm border border-transparent
         transition-all duration-150
         ${isSelected
-          ? 'border-[var(--wl-red)] shadow-sm'
+          ? 'border-[#2A54A1] shadow-sm'
           : 'hover:bg-white hover:shadow-sm'
         }
         ${task.is_completed ? 'opacity-60' : ''}
       `}
+      style={{ color: NAVY }}
     >
       {/* Checkbox */}
       <TaskCheckbox
@@ -73,13 +77,8 @@ export function TaskItem({
       {/* Task content */}
       <div className="flex-1 min-w-0">
         <p
-          className={`
-            text-[15px] truncate
-            ${task.is_completed
-              ? 'text-[var(--wl-text-completed)] line-through'
-              : 'text-[var(--wl-text-primary)]'
-            }
-          `}
+          className={`text-[15px] truncate ${task.is_completed ? 'line-through' : ''}`}
+          style={{ color: task.is_completed ? NAVY_COMPLETED : NAVY }}
         >
           {task.title}
         </p>
@@ -90,13 +89,8 @@ export function TaskItem({
         {/* Due date */}
         {task.due_date && !task.is_completed && (
           <span
-            className={`
-              flex items-center gap-1 text-xs
-              ${isOverdue(task.due_date)
-                ? 'text-red-500'
-                : 'text-[var(--wl-text-secondary)]'
-              }
-            `}
+            className="flex items-center gap-1 text-xs"
+            style={{ color: isOverdue(task.due_date) ? '#DC2626' : NAVY }}
           >
             <Calendar className="w-3.5 h-3.5" />
             {formatDueDate(task.due_date)}
@@ -105,7 +99,7 @@ export function TaskItem({
 
         {/* Subtasks indicator */}
         {totalSubtasks > 0 && (
-          <span className="flex items-center gap-1 text-xs text-[var(--wl-text-secondary)]">
+          <span className="flex items-center gap-1 text-xs" style={{ color: NAVY }}>
             <ListChecks className="w-3.5 h-3.5" />
             {completedSubtasks}/{totalSubtasks}
           </span>

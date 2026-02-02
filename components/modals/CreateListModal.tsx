@@ -13,6 +13,8 @@ interface CreateListModalProps {
   onClose: () => void;
 }
 
+const NAVY = '#2A54A1';
+
 const COLORS = [
   '#D64545', // Red (Wunderlist)
   '#E67E22', // Orange
@@ -104,19 +106,20 @@ export function CreateListModal({ isOpen, onClose }: CreateListModalProps) {
             exit={{ opacity: 0, scale: 0.95 }}
             className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50
               w-full max-w-md bg-white rounded-xl shadow-xl"
+            style={{ color: NAVY }}
           >
             <form onSubmit={handleSubmit}>
               {/* Header */}
-              <div className="flex items-center justify-between p-4 border-b border-[var(--wl-divider)]">
-                <h2 className="text-lg font-semibold text-[var(--wl-text-primary)]">
+              <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                <h2 className="text-lg font-semibold" style={{ color: NAVY }}>
                   Create new list
                 </h2>
                 <button
                   type="button"
                   onClick={handleClose}
-                  className="p-1.5 rounded hover:bg-[var(--wl-sidebar-bg)] transition-colors"
+                  className="p-1.5 rounded hover:bg-gray-100 transition-colors"
                 >
-                  <X className="w-5 h-5 text-[var(--wl-sidebar-count)]" />
+                  <X className="w-5 h-5" style={{ color: NAVY }} />
                 </button>
               </div>
 
@@ -124,7 +127,7 @@ export function CreateListModal({ isOpen, onClose }: CreateListModalProps) {
               <div className="p-4 space-y-4">
                 {/* Name input */}
                 <div>
-                  <label className="block text-sm font-medium text-[var(--wl-text-secondary)] mb-1.5">
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: NAVY }}>
                     List name
                   </label>
                   <input
@@ -133,15 +136,15 @@ export function CreateListModal({ isOpen, onClose }: CreateListModalProps) {
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Enter list name..."
                     autoFocus
-                    className="w-full px-3 py-2 border border-[var(--wl-divider)] rounded-lg
-                      text-[var(--wl-text-primary)] placeholder:text-[var(--wl-sidebar-count)]
-                      focus:outline-none focus:ring-2 focus:ring-[var(--wl-red)] focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg
+                      focus:outline-none focus:ring-2 focus:ring-[#2A54A1] focus:border-transparent"
+                    style={{ color: NAVY }}
                   />
                 </div>
 
                 {/* Color picker */}
                 <div>
-                  <label className="block text-sm font-medium text-[var(--wl-text-secondary)] mb-2">
+                  <label className="block text-sm font-medium mb-2" style={{ color: NAVY }}>
                     Color
                   </label>
                   <div className="flex gap-2 flex-wrap">
@@ -162,31 +165,32 @@ export function CreateListModal({ isOpen, onClose }: CreateListModalProps) {
                 </div>
 
                 {/* Preview */}
-                <div className="flex items-center gap-3 p-3 bg-[var(--wl-sidebar-bg)] rounded-lg">
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                   <div
                     className="w-3 h-3 rounded-full"
                     style={{ backgroundColor: color }}
                   />
-                  <span className="text-sm text-[var(--wl-text-primary)]">
+                  <span className="text-sm" style={{ color: NAVY }}>
                     {name || 'List preview'}
                   </span>
                 </div>
               </div>
 
               {/* Footer */}
-              <div className="flex justify-end gap-2 p-4 border-t border-[var(--wl-divider)]">
+              <div className="flex justify-end gap-2 p-4 border-t border-gray-200">
                 <button
                   type="button"
                   onClick={handleClose}
-                  className="px-4 py-2 text-sm text-[var(--wl-text-secondary)] hover:bg-[var(--wl-sidebar-bg)] rounded-lg transition-colors"
+                  className="px-4 py-2 text-sm hover:bg-gray-100 rounded-lg transition-colors"
+                  style={{ color: NAVY }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={!name.trim() || createList.isPending}
-                  className="px-4 py-2 text-sm text-white bg-[var(--wl-red)] hover:bg-[var(--wl-red-dark)]
-                    rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 text-sm text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ backgroundColor: NAVY }}
                 >
                   {createList.isPending ? 'Creating...' : 'Create list'}
                 </button>

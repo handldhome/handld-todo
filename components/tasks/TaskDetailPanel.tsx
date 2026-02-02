@@ -19,6 +19,9 @@ import {
 } from 'lucide-react';
 import type { Task, List, Subtask } from '@/types';
 
+const NAVY = '#2A54A1';
+const NAVY_LIGHT = '#7A9BD4';
+
 interface TaskDetailPanelProps {
   task: Task;
   onClose: () => void;
@@ -187,10 +190,11 @@ export function TaskDetailPanel({
       animate={{ x: 0 }}
       exit={{ x: '100%' }}
       transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-      className="w-[400px] h-full bg-white border-l border-[var(--wl-divider)] flex flex-col shrink-0"
+      className="w-[400px] h-full bg-white border-l border-gray-200 flex flex-col shrink-0"
+      style={{ color: NAVY }}
     >
       {/* Header */}
-      <div className="flex items-center gap-3 p-4 border-b border-[var(--wl-divider)]">
+      <div className="flex items-center gap-3 p-4 border-b border-gray-200">
         <TaskCheckbox
           checked={task.is_completed}
           onChange={() => onUpdate({
@@ -202,7 +206,8 @@ export function TaskDetailPanel({
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="flex-1 text-lg font-medium text-[var(--wl-text-primary)] bg-transparent outline-none"
+          className="flex-1 text-lg font-medium bg-transparent outline-none"
+          style={{ color: NAVY }}
         />
         <TaskStar
           starred={task.is_starred}
@@ -210,9 +215,9 @@ export function TaskDetailPanel({
         />
         <button
           onClick={onClose}
-          className="p-1.5 rounded hover:bg-[var(--wl-sidebar-bg)] transition-colors"
+          className="p-1.5 rounded hover:bg-gray-100 transition-colors"
         >
-          <X className="w-5 h-5 text-[var(--wl-sidebar-count)]" />
+          <X className="w-5 h-5" style={{ color: NAVY }} />
         </button>
       </div>
 
@@ -220,7 +225,7 @@ export function TaskDetailPanel({
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
         {/* Due Date */}
         <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm font-medium text-[var(--wl-text-secondary)]">
+          <label className="flex items-center gap-2 text-sm font-medium" style={{ color: NAVY }}>
             <Calendar className="w-4 h-4" />
             Due Date
           </label>
@@ -228,20 +233,22 @@ export function TaskDetailPanel({
             type="date"
             value={dueDate}
             onChange={(e) => handleDateChange(e.target.value)}
-            className="w-full px-3 py-2 border border-[var(--wl-divider)] rounded-lg text-sm text-[var(--wl-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--wl-red)] focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2A54A1] focus:border-transparent"
+            style={{ color: NAVY }}
           />
         </div>
 
         {/* Move to List */}
         <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm font-medium text-[var(--wl-text-secondary)]">
+          <label className="flex items-center gap-2 text-sm font-medium" style={{ color: NAVY }}>
             <FolderOpen className="w-4 h-4" />
             List
           </label>
           <select
             value={task.list_id}
             onChange={(e) => handleListChange(e.target.value)}
-            className="w-full px-3 py-2 border border-[var(--wl-divider)] rounded-lg text-sm text-[var(--wl-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--wl-red)] focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2A54A1] focus:border-transparent"
+            style={{ color: NAVY }}
           >
             {lists.map((list) => (
               <option key={list.id} value={list.id}>
@@ -253,11 +260,11 @@ export function TaskDetailPanel({
 
         {/* Subtasks */}
         <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm font-medium text-[var(--wl-text-secondary)]">
+          <label className="flex items-center gap-2 text-sm font-medium" style={{ color: NAVY }}>
             <ListChecks className="w-4 h-4" />
             Subtasks
             {totalSubtasks > 0 && (
-              <span className="text-xs text-[var(--wl-sidebar-count)]">
+              <span className="text-xs" style={{ color: NAVY }}>
                 ({completedSubtasks}/{totalSubtasks})
               </span>
             )}
@@ -283,23 +290,21 @@ export function TaskDetailPanel({
                     className="shrink-0"
                   >
                     {subtask.is_completed ? (
-                      <CheckCircle2 className="w-4 h-4 text-[var(--wl-checkbox-checked)]" />
+                      <CheckCircle2 className="w-4 h-4" style={{ color: NAVY }} />
                     ) : (
-                      <Circle className="w-4 h-4 text-[var(--wl-checkbox-border)]" />
+                      <Circle className="w-4 h-4" style={{ color: NAVY }} />
                     )}
                   </button>
                   <span
-                    className={`flex-1 text-sm ${
-                      subtask.is_completed
-                        ? 'text-[var(--wl-text-completed)] line-through'
-                        : 'text-[var(--wl-text-primary)]'
-                    }`}
+                    className={`flex-1 text-sm ${subtask.is_completed ? 'line-through' : ''}`}
+                    style={{ color: subtask.is_completed ? NAVY_LIGHT : NAVY }}
                   >
                     {subtask.title}
                   </span>
                   <button
                     onClick={() => deleteSubtask.mutate(subtask.id)}
-                    className="opacity-0 group-hover:opacity-100 p-1 text-[var(--wl-sidebar-count)] hover:text-red-500 transition-all"
+                    className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-500 transition-all"
+                    style={{ color: NAVY }}
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -310,19 +315,21 @@ export function TaskDetailPanel({
 
           {/* Add subtask input */}
           <form onSubmit={handleAddSubtask} className="flex items-center gap-2">
-            <Plus className="w-4 h-4 text-[var(--wl-sidebar-count)] shrink-0" />
+            <Plus className="w-4 h-4 shrink-0" style={{ color: NAVY }} />
             <input
               type="text"
               value={newSubtask}
               onChange={(e) => setNewSubtask(e.target.value)}
               placeholder="Add subtask..."
-              className="flex-1 text-sm text-[var(--wl-text-primary)] placeholder:text-[var(--wl-sidebar-count)] bg-transparent outline-none py-1"
+              className="flex-1 text-sm bg-transparent outline-none py-1"
+              style={{ color: NAVY }}
             />
             {newSubtask.trim() && (
               <button
                 type="submit"
                 disabled={createSubtask.isPending}
-                className="text-xs text-[var(--wl-red)] hover:text-[var(--wl-red-dark)] font-medium"
+                className="text-xs font-medium"
+                style={{ color: NAVY }}
               >
                 Add
               </button>
@@ -332,7 +339,7 @@ export function TaskDetailPanel({
 
         {/* Notes */}
         <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm font-medium text-[var(--wl-text-secondary)]">
+          <label className="flex items-center gap-2 text-sm font-medium" style={{ color: NAVY }}>
             <FileText className="w-4 h-4" />
             Notes
           </label>
@@ -341,13 +348,14 @@ export function TaskDetailPanel({
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Add notes..."
             rows={4}
-            className="w-full px-3 py-2 border border-[var(--wl-divider)] rounded-lg text-sm text-[var(--wl-text-primary)] placeholder:text-[var(--wl-sidebar-count)] resize-none focus:outline-none focus:ring-2 focus:ring-[var(--wl-red)] focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#2A54A1] focus:border-transparent"
+            style={{ color: NAVY }}
           />
         </div>
       </div>
 
       {/* Footer */}
-      <div className="p-4 border-t border-[var(--wl-divider)]">
+      <div className="p-4 border-t border-gray-200">
         <button
           onClick={handleDelete}
           className="flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg transition-colors"
@@ -355,7 +363,7 @@ export function TaskDetailPanel({
           <Trash2 className="w-4 h-4" />
           Delete task
         </button>
-        <p className="mt-3 text-xs text-[var(--wl-sidebar-count)]">
+        <p className="mt-3 text-xs" style={{ color: NAVY }}>
           Created {new Date(task.created_at).toLocaleDateString()}
         </p>
       </div>
