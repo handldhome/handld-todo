@@ -3,6 +3,7 @@
 import { TaskCheckbox } from './TaskCheckbox';
 import { TaskStar } from './TaskStar';
 import { Calendar, ListChecks } from 'lucide-react';
+import { formatDueDate, isOverdue } from '@/lib/dateUtils';
 import type { Task } from '@/types';
 
 const NAVY = '#2A54A1';
@@ -14,30 +15,6 @@ interface TaskItemProps {
   onSelect: () => void;
   onToggleComplete: () => void;
   onToggleStar: () => void;
-}
-
-function formatDueDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  const today = new Date();
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-
-  today.setHours(0, 0, 0, 0);
-  tomorrow.setHours(0, 0, 0, 0);
-  date.setHours(0, 0, 0, 0);
-
-  if (date.getTime() === today.getTime()) return 'Today';
-  if (date.getTime() === tomorrow.getTime()) return 'Tomorrow';
-
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-function isOverdue(dateStr: string): boolean {
-  const date = new Date(dateStr);
-  const today = new Date();
-  date.setHours(0, 0, 0, 0);
-  today.setHours(0, 0, 0, 0);
-  return date < today;
 }
 
 export function TaskItem({

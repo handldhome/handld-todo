@@ -28,6 +28,8 @@ export const DEFAULT_SHORTCUTS: Record<string, KeyboardShortcut> = {
 
   // Lists
   'l': { key: 'l', description: 'Create new list', category: 'lists' },
+  '[': { key: '[', description: 'Previous list', category: 'lists' },
+  ']': { key: ']', description: 'Next list', category: 'lists' },
 
   // Global
   '?': { key: '?', description: 'Show keyboard shortcuts', category: 'global' },

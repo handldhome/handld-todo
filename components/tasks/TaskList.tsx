@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { getLocalToday } from '@/lib/dateUtils';
 import { TaskItem } from './TaskItem';
 import { TaskQuickAdd } from './TaskQuickAdd';
 import { TaskDetailPanel } from './TaskDetailPanel';
@@ -65,8 +66,7 @@ export function TaskList({ listId, listType, title }: TaskListProps) {
             query = query.eq('is_starred', true);
             break;
           case 'today':
-            const today = new Date().toISOString().split('T')[0];
-            query = query.eq('due_date', today);
+            query = query.eq('due_date', getLocalToday());
             break;
           case 'completed':
             query = query.eq('is_completed', true);

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { getLocalToday } from '@/lib/dateUtils';
 import { useSettingsStore } from '@/lib/stores/settingsStore';
 import { useSidebarStore } from '@/lib/stores/sidebarStore';
 import { useKeyboardStore } from '@/lib/stores/keyboardStore';
@@ -44,6 +45,8 @@ import {
   Keyboard,
   GripVertical,
   LayoutGrid,
+  Trash2,
+  MoreHorizontal,
 } from 'lucide-react';
 import type { List } from '@/types';
 
@@ -65,6 +68,7 @@ interface SortableListItemProps {
   onSaveEdit: () => void;
   onEditKeyDown: (e: React.KeyboardEvent) => void;
   onStartEdit: (list: List & { tasks: { count: number }[] }) => void;
+  onDelete: (list: List & { tasks: { count: number }[] }) => void;
   onCloseSidebar: () => void;
 }
 
@@ -78,8 +82,10 @@ function SortableListItem({
   onSaveEdit,
   onEditKeyDown,
   onStartEdit,
+  onDelete,
   onCloseSidebar,
 }: SortableListItemProps) {
+  const [showMenu, setShowMenu] = useState(false);
   const {
     attributes,
     listeners,
@@ -127,7 +133,7 @@ function SortableListItem({
       style={style}
       className={`
         flex items-center gap-2.5 px-2.5 py-2 rounded-md
-        transition-colors group
+        transition-colors group relative
         ${active
           ? 'bg-[var(--wl-sidebar-selected)] shadow-sm'
           : 'hover:bg-[var(--wl-sidebar-selected)]/50'
@@ -163,6 +169,49 @@ function SortableListItem({
           </span>
         )}
       </Link>
+      {/* Menu button */}
+      <div className="relative">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowMenu(!showMenu);
+          }}
+          className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-[var(--wl-divider)] transition-all"
+        >
+          <MoreHorizontal className="w-4 h-4 text-[var(--wl-sidebar-count)]" />
+        </button>
+        {showMenu && (
+          <>
+            <div
+              className="fixed inset-0 z-10"
+              onClick={() => setShowMenu(false)}
+            />
+            <div className="absolute right-0 top-full mt-1 z-20 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[120px]">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowMenu(false);
+                  onStartEdit(list);
+                }}
+                className="w-full px-3 py-1.5 text-left text-sm text-[var(--wl-sidebar-text)] hover:bg-gray-100"
+              >
+                Rename
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowMenu(false);
+                  onDelete(list);
+                }}
+                className="w-full px-3 py-1.5 text-left text-sm text-red-500 hover:bg-gray-100 flex items-center gap-2"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Delete
+              </button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -183,6 +232,200 @@ export function Sidebar() {
   const editInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
   const queryClient = useQueryClient();
+
+  // Fetch lists first (needed for keyboard navigation)
+  const { data: lists = [] } = useQuery({
+    queryKey: ['lists'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('lists')
+        .select('*, tasks:tasks(count)')
+        .eq('is_inbox', false)
+        .order('position');
+
+      if (error) throw error;
+      return data as (List & { tasks: { count: number }[] })[];
+    },
+    enabled: !!user,
+  });
+
+  const { data: taskCounts } = useQuery({
+    queryKey: ['taskCounts'],
+    queryFn: async () => {
+      const { data: inboxList } = await supabase
+        .from('lists')
+        .select('id')
+        .eq('is_inbox', true)
+        .single() as { data: { id: string } | null };
+
+      const counts: Record<string, number> = {};
+
+      // Inbox count
+      if (inboxList) {
+        const { count } = await supabase
+          .from('tasks')
+          .select('*', { count: 'exact', head: true })
+          .eq('list_id', inboxList.id)
+          .eq('is_completed', false);
+        counts.inbox = count || 0;
+      }
+
+      // All tasks count
+      const { count: allCount } = await supabase
+        .from('tasks')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_completed', false);
+      counts.all = allCount || 0;
+
+      // Starred count
+      const { count: starredCount } = await supabase
+        .from('tasks')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_starred', true)
+        .eq('is_completed', false);
+      counts.starred = starredCount || 0;
+
+      // Today count
+      const { count: todayCount } = await supabase
+        .from('tasks')
+        .select('*', { count: 'exact', head: true })
+        .eq('due_date', getLocalToday())
+        .eq('is_completed', false);
+      counts.today = todayCount || 0;
+
+      // Completed count
+      const { count: completedCount } = await supabase
+        .from('tasks')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_completed', true);
+      counts.completed = completedCount || 0;
+
+      return counts;
+    },
+    enabled: !!user,
+  });
+
+  // Update list mutation
+  const updateList = useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+      const { error } = await supabase
+        .from('lists')
+        .update({ name })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lists'] });
+      setEditingListId(null);
+    },
+  });
+
+  // Delete list mutation
+  const deleteList = useMutation({
+    mutationFn: async (id: string) => {
+      // First delete all tasks in this list
+      const { error: tasksError } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('list_id', id);
+      if (tasksError) throw tasksError;
+
+      // Then delete the list
+      const { error } = await supabase
+        .from('lists')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lists'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['taskCounts'] });
+      // Navigate to inbox if we were on the deleted list
+      if (pathname.startsWith('/list/')) {
+        router.push('/inbox');
+      }
+    },
+  });
+
+  // Reorder lists mutation
+  const reorderLists = useMutation({
+    mutationFn: async (reorderedLists: { id: string; position: number }[]) => {
+      for (const list of reorderedLists) {
+        const { error } = await supabase
+          .from('lists')
+          .update({ position: list.position })
+          .eq('id', list.id);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lists'] });
+    },
+  });
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = lists.findIndex((list) => list.id === active.id);
+      const newIndex = lists.findIndex((list) => list.id === over.id);
+      const newLists = arrayMove(lists, oldIndex, newIndex);
+      const updates = newLists.map((list, index) => ({ id: list.id, position: index }));
+      reorderLists.mutate(updates);
+    }
+  };
+
+  const handleStartEdit = (list: List & { tasks: { count: number }[] }) => {
+    setEditingListId(list.id);
+    setEditingListName(list.name);
+    setTimeout(() => editInputRef.current?.focus(), 0);
+  };
+
+  const handleSaveEdit = () => {
+    if (editingListId && editingListName.trim()) {
+      updateList.mutate({ id: editingListId, name: editingListName.trim() });
+    } else {
+      setEditingListId(null);
+    }
+  };
+
+  const handleEditKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSaveEdit();
+    } else if (e.key === 'Escape') {
+      setEditingListId(null);
+    }
+  };
+
+  const handleDeleteList = (list: List & { tasks: { count: number }[] }) => {
+    const taskCount = list.tasks?.[0]?.count || 0;
+    const message = taskCount > 0
+      ? `Delete "${list.name}" and its ${taskCount} task${taskCount > 1 ? 's' : ''}?`
+      : `Delete "${list.name}"?`;
+    if (confirm(message)) {
+      deleteList.mutate(list.id);
+    }
+  };
+
+  const isActive = (path: string) => pathname === path;
+
+  // Build navigation list for keyboard shortcuts
+  const allNavigationItems = [
+    ...smartLists.map(sl => ({ type: 'smart' as const, path: sl.path, id: sl.id })),
+    ...lists.map(l => ({ type: 'user' as const, path: `/list/${l.id}`, id: l.id })),
+  ];
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -253,6 +496,28 @@ export function Sidebar() {
           e.preventDefault();
           setShowCreateList(true);
           break;
+        case '[': // Previous list
+          e.preventDefault();
+          navigateList(-1);
+          break;
+        case ']': // Next list
+          e.preventDefault();
+          navigateList(1);
+          break;
+      }
+    };
+
+    const navigateList = (direction: number) => {
+      const currentIndex = allNavigationItems.findIndex(item => item.path === pathname);
+      if (currentIndex === -1) {
+        // If not on a list, go to first or last
+        const targetIndex = direction > 0 ? 0 : allNavigationItems.length - 1;
+        router.push(allNavigationItems[targetIndex].path);
+      } else {
+        const newIndex = currentIndex + direction;
+        if (newIndex >= 0 && newIndex < allNavigationItems.length) {
+          router.push(allNavigationItems[newIndex].path);
+        }
       }
     };
 
@@ -263,157 +528,7 @@ export function Sidebar() {
         clearTimeout(pendingTimeout.current);
       }
     };
-  }, [keyboardEnabled, router, setShowShortcutsModal]);
-
-  const { data: lists = [] } = useQuery({
-    queryKey: ['lists'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('lists')
-        .select('*, tasks:tasks(count)')
-        .eq('is_inbox', false)
-        .order('position');
-
-      if (error) throw error;
-      return data as (List & { tasks: { count: number }[] })[];
-    },
-    enabled: !!user,
-  });
-
-  const { data: taskCounts } = useQuery({
-    queryKey: ['taskCounts'],
-    queryFn: async () => {
-      const { data: inboxList } = await supabase
-        .from('lists')
-        .select('id')
-        .eq('is_inbox', true)
-        .single() as { data: { id: string } | null };
-
-      const counts: Record<string, number> = {};
-
-      // Inbox count
-      if (inboxList) {
-        const { count } = await supabase
-          .from('tasks')
-          .select('*', { count: 'exact', head: true })
-          .eq('list_id', inboxList.id)
-          .eq('is_completed', false);
-        counts.inbox = count || 0;
-      }
-
-      // All tasks count
-      const { count: allCount } = await supabase
-        .from('tasks')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_completed', false);
-      counts.all = allCount || 0;
-
-      // Starred count
-      const { count: starredCount } = await supabase
-        .from('tasks')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_starred', true)
-        .eq('is_completed', false);
-      counts.starred = starredCount || 0;
-
-      // Today count
-      const today = new Date().toISOString().split('T')[0];
-      const { count: todayCount } = await supabase
-        .from('tasks')
-        .select('*', { count: 'exact', head: true })
-        .eq('due_date', today)
-        .eq('is_completed', false);
-      counts.today = todayCount || 0;
-
-      // Completed count
-      const { count: completedCount } = await supabase
-        .from('tasks')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_completed', true);
-      counts.completed = completedCount || 0;
-
-      return counts;
-    },
-    enabled: !!user,
-  });
-
-  // Update list mutation
-  const updateList = useMutation({
-    mutationFn: async ({ id, name }: { id: string; name: string }) => {
-      const { error } = await supabase
-        .from('lists')
-        .update({ name })
-        .eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['lists'] });
-      setEditingListId(null);
-    },
-  });
-
-  // Reorder lists mutation
-  const reorderLists = useMutation({
-    mutationFn: async (reorderedLists: { id: string; position: number }[]) => {
-      for (const list of reorderedLists) {
-        const { error } = await supabase
-          .from('lists')
-          .update({ position: list.position })
-          .eq('id', list.id);
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['lists'] });
-    },
-  });
-
-  // DnD sensors
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (over && active.id !== over.id) {
-      const oldIndex = lists.findIndex((list) => list.id === active.id);
-      const newIndex = lists.findIndex((list) => list.id === over.id);
-      const newLists = arrayMove(lists, oldIndex, newIndex);
-      const updates = newLists.map((list, index) => ({ id: list.id, position: index }));
-      reorderLists.mutate(updates);
-    }
-  };
-
-  const handleStartEdit = (list: List & { tasks: { count: number }[] }) => {
-    setEditingListId(list.id);
-    setEditingListName(list.name);
-    setTimeout(() => editInputRef.current?.focus(), 0);
-  };
-
-  const handleSaveEdit = () => {
-    if (editingListId && editingListName.trim()) {
-      updateList.mutate({ id: editingListId, name: editingListName.trim() });
-    } else {
-      setEditingListId(null);
-    }
-  };
-
-  const handleEditKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSaveEdit();
-    } else if (e.key === 'Escape') {
-      setEditingListId(null);
-    }
-  };
-
-  const isActive = (path: string) => pathname === path;
+  }, [keyboardEnabled, router, setShowShortcutsModal, pathname, allNavigationItems]);
 
   return (
     <>
@@ -542,6 +657,7 @@ export function Sidebar() {
                     onSaveEdit={handleSaveEdit}
                     onEditKeyDown={handleEditKeyDown}
                     onStartEdit={handleStartEdit}
+                    onDelete={handleDeleteList}
                     onCloseSidebar={() => setIsOpen(false)}
                   />
                 ))}
