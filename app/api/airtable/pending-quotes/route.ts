@@ -40,17 +40,10 @@ export async function GET() {
 
       return {
         id: record.id,
-        customerName: (record.fields['Customer Name'] as string) ||
-                      (record.fields['Name'] as string) ||
-                      (record.fields['Customer'] as string) ||
-                      'Unknown Customer',
-        phoneNumber: (record.fields['Phone Number'] as string) ||
-                     (record.fields['Phone'] as string) ||
-                     (record.fields['Mobile'] as string) || '',
+        customerName: (record.fields['Customer Name'] as string) || 'Unknown Customer',
+        phoneNumber: (record.fields['Customer Phone'] as string) || '',
         email: (record.fields['Email'] as string) || '',
-        quoteLink: (record.fields['Quote Link'] as string) ||
-                   (record.fields['Quote URL'] as string) ||
-                   (record.fields['Link'] as string) || '',
+        quoteLink: (record.fields['Quote Link'] as string) || '',
         lastModified,
         hoursAgo,
         createdTime: record.createdTime,

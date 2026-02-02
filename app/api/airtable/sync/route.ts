@@ -84,16 +84,9 @@ export async function POST(request: Request) {
         continue;
       }
 
-      const customerName = (record.fields['Customer Name'] as string) ||
-                           (record.fields['Name'] as string) ||
-                           (record.fields['Customer'] as string) ||
-                           'Unknown Customer';
-      const phoneNumber = (record.fields['Phone Number'] as string) ||
-                          (record.fields['Phone'] as string) ||
-                          (record.fields['Mobile'] as string) || '';
-      const quoteLink = (record.fields['Quote Link'] as string) ||
-                        (record.fields['Quote URL'] as string) ||
-                        (record.fields['Link'] as string) || '';
+      const customerName = (record.fields['Customer Name'] as string) || 'Unknown Customer';
+      const phoneNumber = (record.fields['Customer Phone'] as string) || '';
+      const quoteLink = (record.fields['Quote Link'] as string) || '';
 
       // Create task
       const { data: task, error: taskError } = await supabase

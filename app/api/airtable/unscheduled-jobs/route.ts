@@ -38,19 +38,23 @@ export async function GET() {
       sort: [{ field: 'Target Date', direction: 'asc' }],
     });
 
-    const jobs: UnscheduledJob[] = records.map(record => ({
-      id: record.id,
-      customerName: (record.fields['Customer Name'] as string) ||
-                    (record.fields['Customer'] as string) ||
-                    'Unknown Customer',
-      address: (record.fields['Address'] as string) ||
-               (record.fields['Service Address'] as string) || '',
-      jobType: (record.fields['Job Type'] as string) ||
-               (record.fields['Type'] as string) || '',
-      targetDate: (record.fields['Target Date'] as string) || '',
-      status: (record.fields['Status'] as string) || '',
-      airtableRecordId: record.id,
-    }));
+    const jobs: UnscheduledJob[] = records.map(record => {
+      // Build address from separate fields
+      const street = (record.fields['Street Address (from Quote ID) (from Quote Line Item)'] as string) || '';
+      const city = (record.fields['City'] as string) || '';
+      const zip = (record.fields['Zip'] as string) || '';
+      const addressParts = [street, city, zip].filter(Boolean);
+
+      return {
+        id: record.id,
+        customerName: (record.fields['Customer'] as string) || 'Unknown Customer',
+        address: addressParts.join(', '),
+        jobType: (record.fields['Service'] as string) || '',
+        targetDate: (record.fields['Target Date'] as string) || '',
+        status: (record.fields['Status'] as string) || '',
+        airtableRecordId: record.id,
+      };
+    });
 
     return NextResponse.json({
       count: jobs.length,
