@@ -17,25 +17,25 @@ const tools = [
   {
     name: 'Schedule',
     icon: Calendar,
-    href: 'https://schedule.handldhome.com/admin?tab=schedule',
+    href: 'https://schedule.handldhome.com/admin?key=alia&tab=schedule',
     color: '#3B82F6', // blue
   },
   {
     name: 'Tech Schedules',
     icon: Wrench,
-    href: 'https://schedule.handldhome.com/admin?tab=tech-schedules',
+    href: 'https://schedule.handldhome.com/admin?key=alia&tab=tech-schedules',
     color: '#10B981', // green
   },
   {
     name: 'Jobs',
     icon: Briefcase,
-    href: 'https://schedule.handldhome.com/admin?tab=jobs',
+    href: 'https://schedule.handldhome.com/admin?key=alia&tab=jobs',
     color: '#F59E0B', // amber
   },
   {
     name: 'Tech Availability',
     icon: UserCheck,
-    href: 'https://schedule.handldhome.com/admin?tab=availability',
+    href: 'https://schedule.handldhome.com/admin?key=alia&tab=availability',
     color: '#8B5CF6', // purple
   },
   {
@@ -54,13 +54,13 @@ const tools = [
 
 export default function CommandCenter() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="min-h-screen" style={{ backgroundColor: '#FFFFF2' }}>
       {/* Header */}
       <header className="py-8 px-4 text-center">
         <img
           src="/logo.png"
           alt="Handld"
-          className="h-24 md:h-32 mx-auto mb-3"
+          className="h-32 md:h-44 mx-auto mb-3"
         />
         <h1 className="text-xl md:text-2xl font-semibold tracking-widest uppercase" style={{ color: NAVY }}>
           Command
