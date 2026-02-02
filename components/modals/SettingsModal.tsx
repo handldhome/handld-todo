@@ -87,7 +87,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         className={`
                           w-full flex items-center gap-3 p-3 rounded-lg border transition-colors
                           ${isSelected
-                            ? 'border-[var(--wl-red)] bg-red-50'
+                            ? 'border-[var(--wl-red)] bg-blue-50'
                             : 'border-[var(--wl-divider)] hover:border-[var(--wl-sidebar-count)]'
                           }
                         `}
@@ -122,7 +122,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   className={`
                     w-full flex items-center gap-3 p-3 rounded-lg border transition-colors
                     ${soundEnabled
-                      ? 'border-[var(--wl-red)] bg-red-50'
+                      ? 'border-[var(--wl-red)] bg-blue-50'
                       : 'border-[var(--wl-divider)] hover:border-[var(--wl-sidebar-count)]'
                     }
                   `}

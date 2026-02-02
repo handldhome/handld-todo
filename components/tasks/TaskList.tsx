@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
@@ -9,6 +9,8 @@ import { TaskItem } from './TaskItem';
 import { TaskQuickAdd } from './TaskQuickAdd';
 import { TaskDetailPanel } from './TaskDetailPanel';
 import { useSidebarStore } from '@/lib/stores/sidebarStore';
+import { useKeyboardStore } from '@/lib/stores/keyboardStore';
+import { useSound } from '@/components/providers/SoundProvider';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import type { Task, SmartListType } from '@/types';
 
@@ -21,7 +23,10 @@ interface TaskListProps {
 export function TaskList({ listId, listType, title }: TaskListProps) {
   const { user } = useAuth();
   const { selectedTaskId, setSelectedTaskId } = useSidebarStore();
+  const { enabled: keyboardEnabled } = useKeyboardStore();
+  const { playComplete, playDelete } = useSound();
   const [showCompleted, setShowCompleted] = useState(false);
+  const quickAddRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
   const queryClient = useQueryClient();
 
@@ -104,8 +109,12 @@ export function TaskList({ listId, listType, title }: TaskListProps) {
     enabled: !!user && listType !== 'completed' && (!!listId || !!listType) && (listType !== 'inbox' || !!inboxList?.id),
   });
 
+  // All visible tasks (for keyboard navigation)
+  const allTasks = [...tasks, ...(showCompleted ? completedTasks : [])];
+
   // Get selected task
   const selectedTask = [...tasks, ...completedTasks].find(t => t.id === selectedTaskId);
+  const selectedIndex = allTasks.findIndex(t => t.id === selectedTaskId);
 
   // Update task mutation
   const updateTask = useMutation({
@@ -117,7 +126,10 @@ export function TaskList({ listId, listType, title }: TaskListProps) {
 
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      if (variables.is_completed) {
+        playComplete();
+      }
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['completedTasks'] });
       queryClient.invalidateQueries({ queryKey: ['taskCounts'] });
@@ -131,6 +143,7 @@ export function TaskList({ listId, listType, title }: TaskListProps) {
       if (error) throw error;
     },
     onSuccess: () => {
+      playDelete();
       setSelectedTaskId(null);
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['completedTasks'] });
@@ -138,20 +151,96 @@ export function TaskList({ listId, listType, title }: TaskListProps) {
     },
   });
 
-  const handleToggleComplete = (task: Task) => {
+  const handleToggleComplete = useCallback((task: Task) => {
     updateTask.mutate({
       id: task.id,
       is_completed: !task.is_completed,
       completed_at: !task.is_completed ? new Date().toISOString() : null,
     });
-  };
+  }, [updateTask]);
 
-  const handleToggleStar = (task: Task) => {
+  const handleToggleStar = useCallback((task: Task) => {
     updateTask.mutate({
       id: task.id,
       is_starred: !task.is_starred,
     });
-  };
+  }, [updateTask]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    if (!keyboardEnabled) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if typing in an input or textarea
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      switch (e.key) {
+        case 'n':
+          e.preventDefault();
+          quickAddRef.current?.focus();
+          break;
+
+        case 'j': // Next task
+          e.preventDefault();
+          if (allTasks.length === 0) return;
+          if (selectedIndex === -1) {
+            setSelectedTaskId(allTasks[0].id);
+          } else if (selectedIndex < allTasks.length - 1) {
+            setSelectedTaskId(allTasks[selectedIndex + 1].id);
+          }
+          break;
+
+        case 'k': // Previous task
+          e.preventDefault();
+          if (allTasks.length === 0) return;
+          if (selectedIndex === -1) {
+            setSelectedTaskId(allTasks[allTasks.length - 1].id);
+          } else if (selectedIndex > 0) {
+            setSelectedTaskId(allTasks[selectedIndex - 1].id);
+          }
+          break;
+
+        case 'x': // Toggle complete
+          if (selectedTask) {
+            e.preventDefault();
+            handleToggleComplete(selectedTask);
+          }
+          break;
+
+        case 's': // Toggle star
+          if (selectedTask && !e.metaKey && !e.ctrlKey) {
+            e.preventDefault();
+            handleToggleStar(selectedTask);
+          }
+          break;
+
+        case 'Delete':
+        case 'Backspace':
+          if (selectedTask && target.tagName !== 'INPUT') {
+            e.preventDefault();
+            if (confirm('Delete this task?')) {
+              deleteTask.mutate(selectedTask.id);
+            }
+          }
+          break;
+
+        case 'Escape':
+          e.preventDefault();
+          setSelectedTaskId(null);
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [keyboardEnabled, allTasks, selectedIndex, selectedTask, setSelectedTaskId, handleToggleComplete, handleToggleStar, deleteTask]);
 
   if (isLoading) {
     return (
@@ -169,7 +258,7 @@ export function TaskList({ listId, listType, title }: TaskListProps) {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Quick add */}
         {listType !== 'completed' && (
-          <TaskQuickAdd listId={effectiveListId} listType={listType} />
+          <TaskQuickAdd ref={quickAddRef} listId={effectiveListId} listType={listType} />
         )}
 
         {/* Tasks */}
@@ -179,7 +268,10 @@ export function TaskList({ listId, listType, title }: TaskListProps) {
               <p className="text-[var(--wl-text-secondary)] text-lg">
                 {listType === 'completed'
                   ? 'No completed tasks yet'
-                  : 'No tasks yet. Add one above!'}
+                  : 'No tasks yet. Press N to add one!'}
+              </p>
+              <p className="text-sm text-[var(--wl-sidebar-count)] mt-2">
+                Press ? for keyboard shortcuts
               </p>
             </div>
           ) : (
