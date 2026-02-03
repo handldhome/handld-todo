@@ -6,7 +6,11 @@ export const metadata: Metadata = {
   title: "Handld Command Center",
   description: "The operating center for Handld Home Services",
   icons: {
-    icon: "/icon.png",
+    icon: [
+      { url: "/favicon.png", type: "image/png" },
+      { url: "/icon.png", type: "image/png" },
+    ],
+    shortcut: "/favicon.png",
     apple: "/apple-icon.png",
   },
   openGraph: {
@@ -30,6 +34,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="icon" href="/favicon.png" type="image/png" />
+        <link rel="shortcut icon" href="/favicon.png" type="image/png" />
+      </head>
       <body className="antialiased">
         <Providers>
           {children}
