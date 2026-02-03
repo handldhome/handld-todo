@@ -2,7 +2,7 @@
 
 import { TaskCheckbox } from './TaskCheckbox';
 import { TaskStar } from './TaskStar';
-import { Calendar, ListChecks } from 'lucide-react';
+import { Calendar, ListChecks, Folder } from 'lucide-react';
 import { formatDueDate, isOverdue } from '@/lib/dateUtils';
 import type { Task } from '@/types';
 
@@ -15,6 +15,8 @@ interface TaskItemProps {
   onSelect: () => void;
   onToggleComplete: () => void;
   onToggleStar: () => void;
+  showListName?: boolean;
+  listName?: string;
 }
 
 export function TaskItem({
@@ -23,6 +25,8 @@ export function TaskItem({
   onSelect,
   onToggleComplete,
   onToggleStar,
+  showListName,
+  listName,
 }: TaskItemProps) {
   const completedSubtasks = task.subtasks?.filter(s => s.is_completed).length || 0;
   const totalSubtasks = task.subtasks?.length || 0;
@@ -63,6 +67,14 @@ export function TaskItem({
 
       {/* Metadata */}
       <div className="flex items-center gap-3 shrink-0">
+        {/* List name */}
+        {showListName && listName && (
+          <span className="flex items-center gap-1 text-xs px-2 py-0.5 bg-gray-100 rounded" style={{ color: NAVY }}>
+            <Folder className="w-3 h-3" />
+            {listName}
+          </span>
+        )}
+
         {/* Due date */}
         {task.due_date && !task.is_completed && (
           <span

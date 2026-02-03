@@ -12,8 +12,10 @@ import { TaskDetailPanel } from './TaskDetailPanel';
 import { useSidebarStore } from '@/lib/stores/sidebarStore';
 import { useKeyboardStore } from '@/lib/stores/keyboardStore';
 import { useSound } from '@/components/providers/SoundProvider';
-import { ChevronDown, ChevronRight } from 'lucide-react';
-import type { Task, SmartListType } from '@/types';
+import { ChevronDown, ChevronRight, ArrowUpDown } from 'lucide-react';
+import type { Task, SmartListType, List } from '@/types';
+
+type SortOption = 'date' | 'starred' | 'list' | 'created';
 
 interface TaskListProps {
   listId?: string;
@@ -27,6 +29,8 @@ export function TaskList({ listId, listType, title }: TaskListProps) {
   const { enabled: keyboardEnabled } = useKeyboardStore();
   const { playComplete, playDelete } = useSound();
   const [showCompleted, setShowCompleted] = useState(false);
+  const [sortBy, setSortBy] = useState<SortOption>('date');
+  const [showSortMenu, setShowSortMenu] = useState(false);
   const quickAddRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
   const queryClient = useQueryClient();
@@ -46,6 +50,25 @@ export function TaskList({ listId, listType, title }: TaskListProps) {
   });
 
   const effectiveListId = listType === 'inbox' ? inboxList?.id : listId;
+
+  // Fetch all lists for sorting by list name
+  const { data: lists = [] } = useQuery({
+    queryKey: ['lists'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('lists')
+        .select('*')
+        .order('position');
+      return data as List[];
+    },
+    enabled: !!user,
+  });
+
+  // Create a map of list IDs to names
+  const listNameMap = lists.reduce((acc, list) => {
+    acc[list.id] = list.is_inbox ? 'Inbox' : list.name;
+    return acc;
+  }, {} as Record<string, string>);
 
   // Fetch tasks
   const { data: tasks = [], isLoading } = useQuery({
@@ -109,8 +132,42 @@ export function TaskList({ listId, listType, title }: TaskListProps) {
     enabled: !!user && listType !== 'completed' && (!!listId || !!listType) && (listType !== 'inbox' || !!inboxList?.id),
   });
 
+  // Sort tasks based on selected option
+  const sortTasks = (tasksToSort: Task[]): Task[] => {
+    return [...tasksToSort].sort((a, b) => {
+      switch (sortBy) {
+        case 'date':
+          // Tasks with due dates first (soonest first), then tasks without dates
+          if (!a.due_date && !b.due_date) return 0;
+          if (!a.due_date) return 1;
+          if (!b.due_date) return -1;
+          return a.due_date.localeCompare(b.due_date);
+        case 'starred':
+          // Starred first, then by date
+          if (a.is_starred && !b.is_starred) return -1;
+          if (!a.is_starred && b.is_starred) return 1;
+          if (!a.due_date && !b.due_date) return 0;
+          if (!a.due_date) return 1;
+          if (!b.due_date) return -1;
+          return a.due_date.localeCompare(b.due_date);
+        case 'list':
+          // Sort by list name alphabetically
+          const listA = listNameMap[a.list_id] || '';
+          const listB = listNameMap[b.list_id] || '';
+          return listA.localeCompare(listB);
+        case 'created':
+          // Most recently created first
+          return b.created_at.localeCompare(a.created_at);
+        default:
+          return 0;
+      }
+    });
+  };
+
+  const sortedTasks = sortTasks(tasks);
+
   // All visible tasks (for keyboard navigation)
-  const allTasks = [...tasks, ...(showCompleted ? completedTasks : [])];
+  const allTasks = [...sortedTasks, ...(showCompleted ? completedTasks : [])];
 
   // Get selected task
   const selectedTask = [...tasks, ...completedTasks].find(t => t.id === selectedTaskId);
@@ -261,9 +318,61 @@ export function TaskList({ listId, listType, title }: TaskListProps) {
           <TaskQuickAdd ref={quickAddRef} listId={effectiveListId} listType={listType} />
         )}
 
+        {/* Sort controls */}
+        {tasks.length > 0 && (
+          <div className="px-4 py-2 flex justify-end relative">
+            <button
+              onClick={() => setShowSortMenu(!showSortMenu)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg hover:bg-gray-100 transition-colors"
+              style={{ color: '#2A54A1' }}
+            >
+              <ArrowUpDown className="w-4 h-4" />
+              Sort: {sortBy === 'date' ? 'Due Date' : sortBy === 'starred' ? 'Starred' : sortBy === 'list' ? 'List' : 'Created'}
+            </button>
+            {showSortMenu && (
+              <>
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setShowSortMenu(false)}
+                />
+                <div className="absolute right-4 top-full mt-1 z-20 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[140px]">
+                  <button
+                    onClick={() => { setSortBy('date'); setShowSortMenu(false); }}
+                    className={`w-full px-3 py-1.5 text-left text-sm hover:bg-gray-100 ${sortBy === 'date' ? 'font-medium' : ''}`}
+                    style={{ color: '#2A54A1' }}
+                  >
+                    Due Date
+                  </button>
+                  <button
+                    onClick={() => { setSortBy('starred'); setShowSortMenu(false); }}
+                    className={`w-full px-3 py-1.5 text-left text-sm hover:bg-gray-100 ${sortBy === 'starred' ? 'font-medium' : ''}`}
+                    style={{ color: '#2A54A1' }}
+                  >
+                    Starred First
+                  </button>
+                  <button
+                    onClick={() => { setSortBy('list'); setShowSortMenu(false); }}
+                    className={`w-full px-3 py-1.5 text-left text-sm hover:bg-gray-100 ${sortBy === 'list' ? 'font-medium' : ''}`}
+                    style={{ color: '#2A54A1' }}
+                  >
+                    List
+                  </button>
+                  <button
+                    onClick={() => { setSortBy('created'); setShowSortMenu(false); }}
+                    className={`w-full px-3 py-1.5 text-left text-sm hover:bg-gray-100 ${sortBy === 'created' ? 'font-medium' : ''}`}
+                    style={{ color: '#2A54A1' }}
+                  >
+                    Recently Created
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
         {/* Tasks */}
         <div className="flex-1 overflow-y-auto">
-          {tasks.length === 0 && completedTasks.length === 0 ? (
+          {sortedTasks.length === 0 && completedTasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center p-8">
               <p className="text-lg" style={{ color: '#2A54A1' }}>
                 {listType === 'completed'
@@ -277,7 +386,7 @@ export function TaskList({ listId, listType, title }: TaskListProps) {
           ) : (
             <div className="p-4 space-y-1">
               <AnimatePresence mode="popLayout">
-                {tasks.map((task) => (
+                {sortedTasks.map((task) => (
                   <motion.div
                     key={task.id}
                     layout
@@ -292,6 +401,8 @@ export function TaskList({ listId, listType, title }: TaskListProps) {
                       onSelect={() => setSelectedTaskId(task.id)}
                       onToggleComplete={() => handleToggleComplete(task)}
                       onToggleStar={() => handleToggleStar(task)}
+                      showListName={listType === 'all' || listType === 'starred' || listType === 'today'}
+                      listName={listNameMap[task.list_id]}
                     />
                   </motion.div>
                 ))}
