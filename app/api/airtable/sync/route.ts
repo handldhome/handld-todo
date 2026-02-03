@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { fetchAllAirtableRecords, updateAirtableRecord } from '@/lib/airtable/client';
+import { getLocalToday } from '@/lib/dateUtils';
 
 // Create a Supabase client with service role for server-side operations
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -35,28 +36,51 @@ export async function POST(request: Request) {
       syncedBack: 0,
     };
 
-    // Get user's inbox list
-    const { data: inboxList } = await supabase
+    // Get user's "Clients" list (or create it if it doesn't exist)
+    let { data: clientsList } = await supabase
       .from('lists')
       .select('id')
       .eq('user_id', userId)
-      .eq('is_inbox', true)
+      .eq('name', 'Clients')
       .single();
 
-    if (!inboxList) {
+    // If "Clients" list doesn't exist, create it
+    if (!clientsList) {
+      const { data: newList, error: createError } = await supabase
+        .from('lists')
+        .insert({
+          user_id: userId,
+          name: 'Clients',
+          icon: 'users',
+          color: '#3B82F6',
+          position: 100,
+          is_inbox: false,
+          is_smart: false,
+        })
+        .select()
+        .single();
+
+      if (createError) {
+        return NextResponse.json(
+          { error: `Failed to create Clients list: ${createError.message}` },
+          { status: 500 }
+        );
+      }
+      clientsList = newList;
+    }
+
+    if (!clientsList) {
       return NextResponse.json(
-        { error: 'User inbox not found' },
+        { error: 'Could not find or create Clients list' },
         { status: 404 }
       );
     }
 
-    // 1. Fetch pending quotes from Airtable
-    const oneHourAgo = new Date();
-    oneHourAgo.setHours(oneHourAgo.getHours() - 1);
-
+    // 1. Fetch pending quotes from Airtable (same criteria as Command Center widget)
     const formula = `AND(
       OR({Quote Approved} = FALSE(), {Quote Approved} = BLANK()),
-      DATETIME_DIFF(NOW(), LAST_MODIFIED_TIME(), 'hours') >= 1
+      DATETIME_DIFF(NOW(), LAST_MODIFIED_TIME(), 'hours') >= 1,
+      DATETIME_DIFF(NOW(), LAST_MODIFIED_TIME(), 'days') <= 7
     )`.replace(/\s+/g, ' ');
 
     type AirtableFields = Record<string, unknown>;
@@ -88,17 +112,18 @@ export async function POST(request: Request) {
       const phoneNumber = (record.fields['Customer Phone'] as string) || '';
       const quoteLink = (record.fields['Quote Link'] as string) || '';
 
-      // Create task
+      // Create task in Clients list
       const { data: task, error: taskError } = await supabase
         .from('tasks')
         .insert({
-          list_id: inboxList.id,
+          list_id: clientsList.id,
           user_id: userId,
-          title: `Follow up: ${customerName}${phoneNumber ? ` - ${phoneNumber}` : ''}`,
-          notes: `Quote pending approval for over 1 hour.\n\nCustomer: ${customerName}\nPhone: ${phoneNumber}`,
+          title: `FU with ${customerName}'s Quote`,
+          notes: phoneNumber || null,
           link: quoteLink || null,
+          due_date: getLocalToday(),
           is_completed: false,
-          is_starred: true, // Star follow-ups for visibility
+          is_starred: false,
           position: 0,
         })
         .select()

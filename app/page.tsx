@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/components/providers/AuthProvider';
 import {
   Calendar,
   Briefcase,
@@ -109,6 +110,7 @@ function formatDate(dateStr: string): string {
 }
 
 export default function CommandCenter() {
+  const { user } = useAuth();
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
   const [unscheduledJobs, setUnscheduledJobs] = useState<UnscheduledJob[]>([]);
@@ -118,6 +120,39 @@ export default function CommandCenter() {
   const [jobsError, setJobsError] = useState<string | null>(null);
   const [quotesError, setQuotesError] = useState<string | null>(null);
   const [dismissedQuotes, setDismissedQuotes] = useState<Set<string>>(new Set());
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<string | null>(null);
+
+  // Sync follow-ups to tasks
+  const syncFollowUps = async () => {
+    if (!user) return;
+    setSyncing(true);
+    setSyncResult(null);
+    try {
+      const res = await fetch('/api/airtable/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSyncResult(`Synced: ${data.result.created} new tasks created`);
+      } else {
+        setSyncResult(`Error: ${data.error}`);
+      }
+    } catch (error) {
+      setSyncResult('Sync failed');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  // Auto-sync on page load if user is logged in
+  useEffect(() => {
+    if (user) {
+      syncFollowUps();
+    }
+  }, [user]);
 
   // Load dismissed quotes from localStorage
   useEffect(() => {
@@ -370,7 +405,20 @@ export default function CommandCenter() {
                     </span>
                   )}
                 </h3>
+                <button
+                  onClick={syncFollowUps}
+                  disabled={syncing || !user}
+                  className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
+                  title="Sync follow-ups to To Do list"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin' : ''}`} style={{ color: NAVY }} />
+                </button>
               </div>
+              {syncResult && (
+                <p className={`text-xs mb-2 ${syncResult.startsWith('Error') ? 'text-red-500' : 'text-green-600'}`}>
+                  {syncResult}
+                </p>
+              )}
 
               {quotesLoading ? (
                 <p className="text-xs text-slate-400">Loading...</p>
