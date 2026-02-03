@@ -36,7 +36,7 @@ export async function POST(request: Request) {
       syncedBack: 0,
     };
 
-    // Get user's "Clients" list (or create it if it doesn't exist)
+    // Get user's "Clients" list, or fall back to Inbox
     let { data: clientsList } = await supabase
       .from('lists')
       .select('id')
@@ -44,34 +44,21 @@ export async function POST(request: Request) {
       .eq('name', 'Clients')
       .single();
 
-    // If "Clients" list doesn't exist, create it
+    // If "Clients" list doesn't exist, use Inbox instead
     if (!clientsList) {
-      const { data: newList, error: createError } = await supabase
+      const { data: inboxList } = await supabase
         .from('lists')
-        .insert({
-          user_id: userId,
-          name: 'Clients',
-          icon: 'users',
-          color: '#3B82F6',
-          position: 100,
-          is_inbox: false,
-          is_smart: false,
-        })
-        .select()
+        .select('id')
+        .eq('user_id', userId)
+        .eq('is_inbox', true)
         .single();
 
-      if (createError) {
-        return NextResponse.json(
-          { error: `Failed to create Clients list: ${createError.message}` },
-          { status: 500 }
-        );
-      }
-      clientsList = newList;
+      clientsList = inboxList;
     }
 
     if (!clientsList) {
       return NextResponse.json(
-        { error: 'Could not find or create Clients list' },
+        { error: 'No Clients or Inbox list found. Please create a list first.' },
         { status: 404 }
       );
     }
