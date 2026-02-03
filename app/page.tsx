@@ -20,6 +20,7 @@ import {
   ExternalLink,
   Clock,
   MapPin,
+  X,
 } from 'lucide-react';
 
 const NAVY = '#2A54A1';
@@ -116,6 +117,31 @@ export default function CommandCenter() {
   const [quotesLoading, setQuotesLoading] = useState(true);
   const [jobsError, setJobsError] = useState<string | null>(null);
   const [quotesError, setQuotesError] = useState<string | null>(null);
+  const [dismissedQuotes, setDismissedQuotes] = useState<Set<string>>(new Set());
+
+  // Load dismissed quotes from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem('dismissedQuotes');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        setDismissedQuotes(new Set(parsed));
+      } catch (e) {
+        console.error('Failed to parse dismissed quotes', e);
+      }
+    }
+  }, []);
+
+  // Dismiss a quote
+  const dismissQuote = (quoteId: string) => {
+    const newDismissed = new Set(dismissedQuotes);
+    newDismissed.add(quoteId);
+    setDismissedQuotes(newDismissed);
+    localStorage.setItem('dismissedQuotes', JSON.stringify([...newDismissed]));
+  };
+
+  // Filter out dismissed quotes
+  const visibleQuotes = pendingQuotes.filter(q => !dismissedQuotes.has(q.id));
 
   // Fetch weather
   useEffect(() => {
@@ -340,7 +366,7 @@ export default function CommandCenter() {
                   Follow-ups
                   {!quotesLoading && !quotesError && (
                     <span className="px-1.5 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded-full">
-                      {pendingQuotes.length}
+                      {visibleQuotes.length}
                     </span>
                   )}
                 </h3>
@@ -353,16 +379,23 @@ export default function CommandCenter() {
                   <AlertCircle className="w-3 h-3" />
                   Error loading
                 </p>
-              ) : pendingQuotes.length === 0 ? (
+              ) : visibleQuotes.length === 0 ? (
                 <p className="text-xs text-slate-400">No pending follow-ups</p>
               ) : (
                 <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-                  {pendingQuotes.map((quote) => (
+                  {visibleQuotes.map((quote) => (
                     <div
                       key={quote.id}
-                      className="p-2 bg-red-50 rounded-lg text-xs"
+                      className="p-2 bg-red-50 rounded-lg text-xs group relative"
                     >
-                      <div className="flex items-center justify-between">
+                      <button
+                        onClick={() => dismissQuote(quote.id)}
+                        className="absolute top-1 right-1 p-0.5 rounded hover:bg-red-200 opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Dismiss"
+                      >
+                        <X className="w-3 h-3 text-red-600" />
+                      </button>
+                      <div className="flex items-center justify-between pr-4">
                         <p className="font-medium truncate" style={{ color: NAVY }}>
                           {quote.customerName}
                         </p>

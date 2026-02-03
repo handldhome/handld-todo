@@ -20,11 +20,12 @@ export async function GET() {
     const oneHourAgo = new Date();
     oneHourAgo.setHours(oneHourAgo.getHours() - 1);
 
-    // Airtable formula: Quote Approved is false/empty AND Last Modified > 1 hour ago
+    // Airtable formula: Quote Approved is false/empty AND Last Modified within past week but > 1 hour ago
     // Note: Airtable's LAST_MODIFIED_TIME() returns the record's last modified time
     const formula = `AND(
       OR({Quote Approved} = FALSE(), {Quote Approved} = BLANK()),
-      DATETIME_DIFF(NOW(), LAST_MODIFIED_TIME(), 'hours') >= 1
+      DATETIME_DIFF(NOW(), LAST_MODIFIED_TIME(), 'hours') >= 1,
+      DATETIME_DIFF(NOW(), LAST_MODIFIED_TIME(), 'days') <= 7
     )`.replace(/\s+/g, ' ');
 
     const records = await fetchAllAirtableRecords('Quote Requests', {
