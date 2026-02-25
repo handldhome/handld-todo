@@ -21,9 +21,6 @@ import {
 } from 'lucide-react';
 import type { Task, List, Subtask } from '@/types';
 
-const NAVY = '#2A54A1';
-const NAVY_LIGHT = '#7A9BD4';
-
 interface TaskDetailPanelProps {
   task: Task;
   onClose: () => void;
@@ -217,11 +214,11 @@ export function TaskDetailPanel({
       animate={{ x: 0 }}
       exit={{ x: '100%' }}
       transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-      className="w-[800px] h-full bg-white border-l border-gray-200 flex flex-col shrink-0"
-      style={{ color: NAVY }}
+      className="w-[800px] h-full border-l border-[#333] flex flex-col shrink-0"
+      style={{ backgroundColor: '#0a0a0a', color: '#fff' }}
     >
       {/* Header */}
-      <div className="flex items-center gap-3 p-4 border-b border-gray-200">
+      <div className="flex items-center gap-3 p-4 border-b border-[#333]" style={{ backgroundColor: '#111' }}>
         <TaskCheckbox
           checked={task.is_completed}
           onChange={() => onUpdate({
@@ -233,8 +230,8 @@ export function TaskDetailPanel({
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="flex-1 text-lg font-medium bg-transparent outline-none"
-          style={{ color: NAVY }}
+          className="flex-1 text-lg font-medium outline-none border-0"
+          style={{ backgroundColor: 'transparent', color: '#fff' }}
         />
         <TaskStar
           starred={task.is_starred}
@@ -242,51 +239,51 @@ export function TaskDetailPanel({
         />
         <button
           onClick={onClose}
-          className="p-1.5 rounded hover:bg-gray-100 transition-colors"
+          className="p-1.5 hover:bg-[#222] transition-colors"
         >
-          <X className="w-5 h-5" style={{ color: NAVY }} />
+          <X className="w-5 h-5 text-[#888] hover:text-[#FF6600]" />
         </button>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+      <div className="flex-1 overflow-y-auto p-4 space-y-6" style={{ backgroundColor: '#0a0a0a' }}>
         {/* Due Date */}
         <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm font-medium" style={{ color: NAVY }}>
+          <label className="flex items-center gap-2 text-sm font-medium text-[#FF6600]">
             <Calendar className="w-4 h-4" />
-            Due Date
+            DUE DATE
           </label>
           <input
             type="date"
             value={dueDate}
             onChange={(e) => handleDateChange(e.target.value)}
             onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2A54A1] focus:border-transparent cursor-pointer"
-            style={{ color: NAVY }}
+            className="w-full px-3 py-2 border border-[#333] text-sm cursor-pointer"
+            style={{ backgroundColor: '#111', color: '#fff', colorScheme: 'dark' }}
           />
         </div>
 
         {/* Recurrence */}
         <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm font-medium" style={{ color: NAVY }}>
+          <label className="flex items-center gap-2 text-sm font-medium text-[#FF6600]">
             <Repeat className="w-4 h-4" />
-            Repeat
+            REPEAT
           </label>
           <select
             value={recurrence}
             onChange={(e) => handleRecurrenceChange(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2A54A1] focus:border-transparent"
-            style={{ color: NAVY }}
+            className="w-full px-3 py-2 border border-[#333] text-sm"
+            style={{ backgroundColor: '#111', color: '#fff' }}
           >
-            <option value="">No repeat</option>
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-            <option value="annually">Annually</option>
-            <option value="custom">Custom...</option>
+            <option value="" style={{ backgroundColor: '#111', color: '#fff' }}>No repeat</option>
+            <option value="daily" style={{ backgroundColor: '#111', color: '#fff' }}>Daily</option>
+            <option value="weekly" style={{ backgroundColor: '#111', color: '#fff' }}>Weekly</option>
+            <option value="monthly" style={{ backgroundColor: '#111', color: '#fff' }}>Monthly</option>
+            <option value="annually" style={{ backgroundColor: '#111', color: '#fff' }}>Annually</option>
+            <option value="custom" style={{ backgroundColor: '#111', color: '#fff' }}>Custom...</option>
           </select>
           {recurrence && (
-            <p className="text-xs" style={{ color: NAVY }}>
+            <p className="text-xs text-[#888]">
               This task will repeat {recurrence === 'daily' ? 'every day' :
                 recurrence === 'weekly' ? 'every week' :
                 recurrence === 'monthly' ? 'every month' :
@@ -297,18 +294,18 @@ export function TaskDetailPanel({
 
         {/* Move to List */}
         <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm font-medium" style={{ color: NAVY }}>
+          <label className="flex items-center gap-2 text-sm font-medium text-[#FF6600]">
             <FolderOpen className="w-4 h-4" />
-            List
+            LIST
           </label>
           <select
             value={task.list_id}
             onChange={(e) => handleListChange(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2A54A1] focus:border-transparent"
-            style={{ color: NAVY }}
+            className="w-full px-3 py-2 border border-[#333] text-sm"
+            style={{ backgroundColor: '#111', color: '#fff' }}
           >
             {lists.map((list) => (
-              <option key={list.id} value={list.id}>
+              <option key={list.id} value={list.id} style={{ backgroundColor: '#111', color: '#fff' }}>
                 {list.is_inbox ? 'Inbox' : list.name}
               </option>
             ))}
@@ -317,11 +314,11 @@ export function TaskDetailPanel({
 
         {/* Subtasks */}
         <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm font-medium" style={{ color: NAVY }}>
+          <label className="flex items-center gap-2 text-sm font-medium text-[#FF6600]">
             <ListChecks className="w-4 h-4" />
-            Subtasks
+            SUBTASKS
             {totalSubtasks > 0 && (
-              <span className="text-xs" style={{ color: NAVY }}>
+              <span className="text-xs text-[#888]">
                 ({completedSubtasks}/{totalSubtasks})
               </span>
             )}
@@ -337,7 +334,7 @@ export function TaskDetailPanel({
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="flex items-center gap-2 group"
+                  className="flex items-center gap-2 group px-2 py-1 hover:bg-[#111]"
                 >
                   <button
                     onClick={() => updateSubtask.mutate({
@@ -347,21 +344,19 @@ export function TaskDetailPanel({
                     className="shrink-0"
                   >
                     {subtask.is_completed ? (
-                      <CheckCircle2 className="w-4 h-4" style={{ color: NAVY }} />
+                      <CheckCircle2 className="w-4 h-4 text-[#00D46A]" />
                     ) : (
-                      <Circle className="w-4 h-4" style={{ color: NAVY }} />
+                      <Circle className="w-4 h-4 text-[#FF6600]" />
                     )}
                   </button>
                   <span
-                    className={`flex-1 text-sm ${subtask.is_completed ? 'line-through' : ''}`}
-                    style={{ color: subtask.is_completed ? NAVY_LIGHT : NAVY }}
+                    className={`flex-1 text-sm ${subtask.is_completed ? 'line-through text-[#555]' : 'text-white'}`}
                   >
                     {subtask.title}
                   </span>
                   <button
                     onClick={() => deleteSubtask.mutate(subtask.id)}
-                    className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-500 transition-all"
-                    style={{ color: NAVY }}
+                    className="opacity-0 group-hover:opacity-100 p-1 text-[#888] hover:text-[#FF4444] transition-all"
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -371,10 +366,9 @@ export function TaskDetailPanel({
           </div>
 
           {/* Add subtask input */}
-          <form onSubmit={handleAddSubtask} className="flex items-center gap-2">
+          <form onSubmit={handleAddSubtask} className="flex items-center gap-2 border border-[#333] px-2 py-1 hover:border-[#555]" style={{ backgroundColor: '#0a0a0a' }}>
             <Plus
-              className="w-4 h-4 shrink-0 cursor-pointer"
-              style={{ color: NAVY }}
+              className="w-4 h-4 shrink-0 cursor-pointer text-[#FF6600]"
               onClick={() => subtaskInputRef.current?.focus()}
             />
             <input
@@ -383,17 +377,16 @@ export function TaskDetailPanel({
               value={newSubtask}
               onChange={(e) => setNewSubtask(e.target.value)}
               placeholder="Add subtask..."
-              className="flex-1 text-sm bg-transparent outline-none py-1"
-              style={{ color: NAVY }}
+              className="flex-1 text-sm outline-none py-1 border-0"
+              style={{ backgroundColor: 'transparent', color: '#fff' }}
             />
             {newSubtask.trim() && (
               <button
                 type="submit"
                 disabled={createSubtask.isPending}
-                className="text-xs font-medium"
-                style={{ color: NAVY }}
+                className="text-xs font-medium text-[#FF6600] hover:text-[#FFB800]"
               >
-                Add
+                ADD
               </button>
             )}
           </form>
@@ -401,27 +394,26 @@ export function TaskDetailPanel({
 
         {/* Link */}
         <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm font-medium" style={{ color: NAVY }}>
+          <label className="flex items-center gap-2 text-sm font-medium text-[#FF6600]">
             <Link2 className="w-4 h-4" />
-            Link
+            LINK
           </label>
           <input
             type="url"
             value={link}
             onChange={(e) => setLink(e.target.value)}
             placeholder="Add a link (e.g., Airtable quote viewer)..."
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2A54A1] focus:border-transparent"
-            style={{ color: NAVY }}
+            className="w-full px-3 py-2 border border-[#333] text-sm"
+            style={{ backgroundColor: '#111', color: '#fff' }}
           />
           {link && (
             <a
               href={link}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs hover:underline"
-              style={{ color: NAVY }}
+              className="inline-flex items-center gap-1 text-xs text-[#00D4FF] hover:underline"
             >
-              Open link
+              OPEN LINK
               <span className="text-[10px]">↗</span>
             </a>
           )}
@@ -429,32 +421,32 @@ export function TaskDetailPanel({
 
         {/* Notes */}
         <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm font-medium" style={{ color: NAVY }}>
+          <label className="flex items-center gap-2 text-sm font-medium text-[#FF6600]">
             <FileText className="w-4 h-4" />
-            Notes
+            NOTES
           </label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Add notes..."
             rows={4}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#2A54A1] focus:border-transparent"
-            style={{ color: NAVY }}
+            className="w-full px-3 py-2 border border-[#333] text-sm resize-none"
+            style={{ backgroundColor: '#111', color: '#fff' }}
           />
         </div>
       </div>
 
       {/* Footer */}
-      <div className="p-4 border-t border-gray-200">
+      <div className="p-4 border-t border-[#333]" style={{ backgroundColor: '#111' }}>
         <button
           onClick={handleDelete}
-          className="flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+          className="flex items-center gap-2 px-3 py-2 text-sm text-[#FF4444] hover:bg-[#FF4444]/10 transition-colors"
         >
           <Trash2 className="w-4 h-4" />
-          Delete task
+          DELETE TASK
         </button>
-        <p className="mt-3 text-xs" style={{ color: NAVY }}>
-          Created {new Date(task.created_at).toLocaleDateString()}
+        <p className="mt-3 text-xs" style={{ color: '#888' }}>
+          CREATED {new Date(task.created_at).toLocaleDateString().toUpperCase()}
         </p>
       </div>
     </motion.div>

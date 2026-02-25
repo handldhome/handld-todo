@@ -1,7 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { createClient } from '@/lib/supabase/client';
+import { getLocalToday } from '@/lib/dateUtils';
 import {
   Calendar,
   Briefcase,
@@ -15,18 +18,17 @@ import {
   CloudSnow,
   CloudLightning,
   Wind,
-  AlertCircle,
   Phone,
   RefreshCw,
   ExternalLink,
   Clock,
-  MapPin,
   X,
+  Rocket,
+  Circle,
+  CheckCircle2,
+  TrendingUp,
+  Activity,
 } from 'lucide-react';
-
-const NAVY = '#2A54A1';
-const WEATHER_API_KEY = '5fef1daf633f6e100c89a58c25220c72';
-const ZIP_CODE = '91103';
 
 interface WeatherData {
   temp: number;
@@ -55,43 +57,25 @@ interface PendingQuote {
   hoursAgo: number;
 }
 
+interface TodoTask {
+  id: string;
+  title: string;
+  is_completed: boolean;
+  is_starred: boolean;
+  due_date: string;
+}
+
+const WEATHER_API_KEY = '5fef1daf633f6e100c89a58c25220c72';
+const ZIP_CODE = '91103';
+
 const tools = [
-  {
-    name: 'Schedule',
-    icon: Calendar,
-    href: 'https://schedule.handldhome.com/admin?key=alia&tab=schedule',
-    color: '#3B82F6',
-  },
-  {
-    name: 'Tech Schedules',
-    icon: Wrench,
-    href: 'https://schedule.handldhome.com/admin?key=alia&tab=tech-schedules',
-    color: '#10B981',
-  },
-  {
-    name: 'Jobs',
-    icon: Briefcase,
-    href: 'https://schedule.handldhome.com/admin?key=alia&tab=jobs',
-    color: '#F59E0B',
-  },
-  {
-    name: 'Tech Availability',
-    icon: UserCheck,
-    href: 'https://schedule.handldhome.com/admin?key=alia&tab=availability',
-    color: '#8B5CF6',
-  },
-  {
-    name: 'To Do',
-    icon: CheckSquare,
-    href: '/inbox',
-    color: '#EC4899',
-  },
-  {
-    name: 'Website',
-    icon: Globe,
-    href: 'https://handldhome.com',
-    color: '#6366F1',
-  },
+  { name: 'SCHEDULE', icon: Calendar, href: 'https://schedule.handldhome.com/admin?key=alia&tab=schedule', key: 's' },
+  { name: 'TECH SCHED', icon: Wrench, href: 'https://schedule.handldhome.com/admin?key=alia&tab=tech-schedules', key: 't' },
+  { name: 'JOBS', icon: Briefcase, href: 'https://schedule.handldhome.com/admin?key=alia&tab=jobs', key: 'j' },
+  { name: 'AVAIL', icon: UserCheck, href: 'https://schedule.handldhome.com/admin?key=alia&tab=availability', key: 'a' },
+  { name: 'TODO', icon: CheckSquare, href: '/today', key: 'd' },
+  { name: 'WEBSITE', icon: Globe, href: 'https://handldhome.com', key: 'w' },
+  { name: 'PRO', icon: Rocket, href: 'https://pro.handldhome.com', key: 'p' },
 ];
 
 function getWeatherIcon(iconCode: string) {
@@ -106,22 +90,66 @@ function getWeatherIcon(iconCode: string) {
 function formatDate(dateStr: string): string {
   if (!dateStr) return '';
   const date = new Date(dateStr);
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase();
+}
+
+function getCurrentTime(): string {
+  return new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+}
+
+function getCurrentDate(): string {
+  return new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase();
 }
 
 export default function CommandCenter() {
   const { user } = useAuth();
+  const router = useRouter();
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
   const [unscheduledJobs, setUnscheduledJobs] = useState<UnscheduledJob[]>([]);
   const [pendingQuotes, setPendingQuotes] = useState<PendingQuote[]>([]);
+  const [todayTasks, setTodayTasks] = useState<TodoTask[]>([]);
   const [jobsLoading, setJobsLoading] = useState(true);
   const [quotesLoading, setQuotesLoading] = useState(true);
+  const [tasksLoading, setTasksLoading] = useState(true);
   const [jobsError, setJobsError] = useState<string | null>(null);
   const [quotesError, setQuotesError] = useState<string | null>(null);
+  const [tasksError, setTasksError] = useState<string | null>(null);
   const [dismissedQuotes, setDismissedQuotes] = useState<Set<string>>(new Set());
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(getCurrentTime());
+
+  const supabase = createClient();
+
+  // Update time every second
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(getCurrentTime()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Keyboard shortcuts for tools
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      // Don't trigger if modifier keys are pressed
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+      const tool = tools.find(t => t.key === e.key.toLowerCase());
+      if (tool) {
+        e.preventDefault();
+        if (tool.href.startsWith('/')) {
+          router.push(tool.href);
+        } else {
+          window.open(tool.href, '_blank');
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [router]);
 
   // Sync follow-ups to tasks
   const syncFollowUps = async () => {
@@ -136,38 +164,79 @@ export default function CommandCenter() {
       });
       const data = await res.json();
       if (data.success) {
-        setSyncResult(`Synced: ${data.result.created} new tasks created`);
+        setSyncResult(`+${data.result.created} SYNCED`);
+        fetchTodayTasks();
       } else {
-        setSyncResult(`Error: ${data.error}`);
+        setSyncResult('SYNC ERR');
       }
-    } catch (error) {
-      setSyncResult('Sync failed');
+    } catch {
+      setSyncResult('SYNC FAIL');
     } finally {
       setSyncing(false);
     }
   };
 
-  // Auto-sync on page load if user is logged in
+  // Fetch today's tasks (including overdue)
+  const fetchTodayTasks = async () => {
+    if (!user) return;
+    try {
+      const today = getLocalToday();
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('id, title, is_completed, is_starred, due_date')
+        .lte('due_date', today)
+        .order('is_completed', { ascending: true })
+        .order('due_date', { ascending: true })
+        .order('position');
+
+      if (error) throw error;
+      setTodayTasks(data || []);
+    } catch {
+      setTasksError('ERR');
+    } finally {
+      setTasksLoading(false);
+    }
+  };
+
+  // Toggle task completion
+  const toggleTaskComplete = async (task: TodoTask) => {
+    const newStatus = !task.is_completed;
+    setTodayTasks(prev =>
+      prev.map(t => t.id === task.id ? { ...t, is_completed: newStatus } : t)
+    );
+
+    const { error } = await supabase
+      .from('tasks')
+      .update({
+        is_completed: newStatus,
+        completed_at: newStatus ? new Date().toISOString() : null,
+      })
+      .eq('id', task.id);
+
+    if (error) {
+      setTodayTasks(prev =>
+        prev.map(t => t.id === task.id ? { ...t, is_completed: !newStatus } : t)
+      );
+    }
+  };
+
   useEffect(() => {
     if (user) {
       syncFollowUps();
+      fetchTodayTasks();
     }
   }, [user]);
 
-  // Load dismissed quotes from localStorage
   useEffect(() => {
     const stored = localStorage.getItem('dismissedQuotes');
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
         setDismissedQuotes(new Set(parsed));
-      } catch (e) {
-        console.error('Failed to parse dismissed quotes', e);
-      }
+      } catch {}
     }
   }, []);
 
-  // Dismiss a quote
   const dismissQuote = (quoteId: string) => {
     const newDismissed = new Set(dismissedQuotes);
     newDismissed.add(quoteId);
@@ -175,10 +244,8 @@ export default function CommandCenter() {
     localStorage.setItem('dismissedQuotes', JSON.stringify([...newDismissed]));
   };
 
-  // Filter out dismissed quotes
   const visibleQuotes = pendingQuotes.filter(q => !dismissedQuotes.has(q.id));
 
-  // Fetch weather
   useEffect(() => {
     async function fetchWeather() {
       try {
@@ -195,29 +262,26 @@ export default function CommandCenter() {
           humidity: data.main.humidity,
           wind: Math.round(data.wind.speed),
         });
-      } catch (error) {
-        console.error('Failed to fetch weather:', error);
-      } finally {
+      } catch {}
+      finally {
         setLoading(false);
       }
     }
     fetchWeather();
   }, []);
 
-  // Fetch unscheduled jobs
   useEffect(() => {
     async function fetchUnscheduledJobs() {
       try {
         const res = await fetch('/api/airtable/unscheduled-jobs');
         const data = await res.json();
         if (data.error) {
-          setJobsError(data.error);
+          setJobsError('ERR');
         } else {
           setUnscheduledJobs(data.jobs || []);
         }
-      } catch (error) {
-        setJobsError('Failed to load jobs');
-        console.error('Failed to fetch unscheduled jobs:', error);
+      } catch {
+        setJobsError('ERR');
       } finally {
         setJobsLoading(false);
       }
@@ -225,20 +289,18 @@ export default function CommandCenter() {
     fetchUnscheduledJobs();
   }, []);
 
-  // Fetch pending quotes
   useEffect(() => {
     async function fetchPendingQuotes() {
       try {
         const res = await fetch('/api/airtable/pending-quotes');
         const data = await res.json();
         if (data.error) {
-          setQuotesError(data.error);
+          setQuotesError('ERR');
         } else {
           setPendingQuotes(data.quotes || []);
         }
-      } catch (error) {
-        setQuotesError('Failed to load quotes');
-        console.error('Failed to fetch pending quotes:', error);
+      } catch {
+        setQuotesError('ERR');
       } finally {
         setQuotesLoading(false);
       }
@@ -247,244 +309,232 @@ export default function CommandCenter() {
   }, []);
 
   const WeatherIcon = weather ? getWeatherIcon(weather.icon) : Cloud;
+  const incompleteTasks = todayTasks.filter(t => !t.is_completed);
+  const completedTasks = todayTasks.filter(t => t.is_completed);
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#FFFFF2' }}>
-      {/* Header */}
-      <header className="py-8 px-4 text-center">
-        <img
-          src="/logo.png"
-          alt="Handld"
-          className="h-32 md:h-44 mx-auto mb-3"
-        />
-        <h1 className="text-xl md:text-2xl font-semibold tracking-widest uppercase" style={{ color: NAVY }}>
-          Command
-        </h1>
+    <div className="min-h-screen bg-black text-white p-2 md:p-4">
+      {/* Header Bar */}
+      <header className="flex items-center justify-between border border-[#333] bg-[#111] px-4 py-3 mb-3">
+        <div className="flex items-center gap-4">
+          <span className="text-[#FF6600] font-bold text-xl tracking-wider">HANDLD</span>
+          <span className="text-[#888] text-sm hidden md:inline">COMMAND CENTER</span>
+        </div>
+        <div className="flex items-center gap-4">
+          <span className="text-[#00D4FF] text-base font-medium">{currentTime}</span>
+          <span className="text-[#888] text-sm hidden md:inline">{getCurrentDate()}</span>
+          <Activity className="w-5 h-5 text-[#00D46A]" />
+        </div>
       </header>
 
-      {/* Weather Widget */}
-      <div className="max-w-5xl mx-auto px-4 mb-6">
-        <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm flex items-center justify-between">
-          {loading ? (
-            <p className="text-slate-400">Loading weather...</p>
-          ) : weather ? (
-            <>
-              <div className="flex items-center gap-4">
-                <div
-                  className="w-14 h-14 md:w-16 md:h-16 rounded-xl flex items-center justify-center"
-                  style={{ backgroundColor: '#FEF3C7' }}
-                >
-                  <WeatherIcon className="w-8 h-8 md:w-9 md:h-9 text-amber-500" />
-                </div>
-                <div>
-                  <p className="text-2xl md:text-3xl font-bold" style={{ color: NAVY }}>
-                    {weather.temp}°F
-                  </p>
-                  <p className="text-sm text-slate-500 capitalize">
-                    {weather.description}
-                  </p>
-                </div>
-              </div>
-              <div className="text-right hidden md:block">
-                <p className="text-sm text-slate-500">{weather.city}</p>
-                <p className="text-sm text-slate-400">
-                  Feels like {weather.feels_like}°F • Wind {weather.wind} mph
-                </p>
-              </div>
-            </>
-          ) : (
-            <p className="text-slate-400">Weather unavailable</p>
-          )}
-        </div>
+      {/* Tools Row */}
+      <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1">
+        {tools.map((tool) => {
+          const Icon = tool.icon;
+          return (
+            <a
+              key={tool.name}
+              href={tool.href}
+              target={tool.href.startsWith('/') ? '_self' : '_blank'}
+              rel={tool.href.startsWith('/') ? undefined : 'noopener noreferrer'}
+              className="flex items-center gap-2 px-4 py-2.5 bg-[#111] border border-[#333] hover:border-[#FF6600] hover:bg-[#1a1a1a] transition-colors min-w-fit group"
+            >
+              <span className="text-[#888] text-xs font-medium w-4 group-hover:text-[#FF6600]">{tool.key.toUpperCase()}</span>
+              <Icon className="w-5 h-5 text-[#FF6600]" />
+              <span className="text-white text-sm">{tool.name}</span>
+            </a>
+          );
+        })}
       </div>
 
-      {/* Main Content with Sidebars */}
-      <div className="max-w-7xl mx-auto px-4 pb-12">
-        <div className="flex gap-4">
-          {/* Left Sidebar - Unscheduled Jobs */}
-          <div className="hidden lg:block w-64 shrink-0">
-            <div className="bg-white rounded-2xl p-4 shadow-sm sticky top-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold flex items-center gap-2 text-sm" style={{ color: NAVY }}>
-                  <Briefcase className="w-4 h-4 text-amber-500" />
-                  Unscheduled
-                  {!jobsLoading && !jobsError && (
-                    <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
-                      {unscheduledJobs.length}
-                    </span>
-                  )}
-                </h3>
-                <a
-                  href="https://schedule.handldhome.com/admin?key=alia&tab=jobs"
-                  className="text-slate-400 hover:text-slate-600"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-              </div>
+      {/* Weather Bar */}
+      <div className="flex items-center justify-between border border-[#333] bg-[#111] px-4 py-3 mb-3">
+        {loading ? (
+          <span className="text-[#888] text-sm">LOADING WEATHER...</span>
+        ) : weather ? (
+          <>
+            <div className="flex items-center gap-4">
+              <WeatherIcon className="w-6 h-6 text-[#FFB800]" />
+              <span className="text-[#FFB800] text-2xl font-bold">{weather.temp}°F</span>
+              <span className="text-[#888] text-sm uppercase hidden sm:inline">{weather.description}</span>
+            </div>
+            <div className="flex items-center gap-4 text-sm">
+              <span className="text-[#888] hidden md:inline">FEELS: <span className="text-white">{weather.feels_like}°F</span></span>
+              <span className="text-[#888] hidden md:inline">WIND: <span className="text-white">{weather.wind}MPH</span></span>
+              <span className="text-[#00D4FF]">{weather.city.toUpperCase()}</span>
+            </div>
+          </>
+        ) : (
+          <span className="text-[#FF4444] text-sm">WEATHER UNAVAILABLE</span>
+        )}
+      </div>
 
-              {jobsLoading ? (
-                <p className="text-xs text-slate-400">Loading...</p>
-              ) : jobsError ? (
-                <p className="text-xs text-red-500 flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3" />
-                  Error loading
-                </p>
-              ) : unscheduledJobs.length === 0 ? (
-                <p className="text-xs text-slate-400">No unscheduled jobs</p>
-              ) : (
-                <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-                  {unscheduledJobs.map((job) => (
-                    <div
-                      key={job.id}
-                      className="p-2 bg-slate-50 rounded-lg text-xs"
-                    >
-                      <p className="font-medium truncate" style={{ color: NAVY }}>
-                        {job.customerName}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1 text-slate-500">
-                        {job.targetDate && (
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {formatDate(job.targetDate)}
-                          </span>
-                        )}
-                      </div>
-                      {job.jobType && (
-                        <p className="text-slate-400 mt-0.5">{job.jobType}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+      {/* Main Grid - Three Panels */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {/* Panel 1: Unscheduled Jobs */}
+        <div className="border border-[#333] bg-[#0a0a0a]">
+          <div className="bg-[#FF6600] text-black px-4 py-2 flex items-center justify-between">
+            <span className="text-sm font-bold tracking-wide">UNSCHEDULED JOBS</span>
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-bold">{unscheduledJobs.length}</span>
+              <a href="https://schedule.handldhome.com/admin?key=alia&tab=jobs">
+                <ExternalLink className="w-4 h-4" />
+              </a>
             </div>
           </div>
-
-          {/* Center - Tools Grid */}
-          <main className="flex-1 min-w-0">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-          {tools.map((tool) => {
-            const Icon = tool.icon;
-
-            return (
-              <a
-                key={tool.name}
-                href={tool.href}
-                className="group bg-white rounded-2xl p-6 md:p-8 shadow-sm hover:shadow-lg transition-all duration-200 hover:-translate-y-1 flex flex-col items-center text-center"
-              >
-                <div
-                  className="w-16 h-16 md:w-20 md:h-20 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-200"
-                  style={{ backgroundColor: `${tool.color}15` }}
-                >
-                  <Icon
-                    className="w-8 h-8 md:w-10 md:h-10"
-                    style={{ color: tool.color }}
-                  />
-                </div>
-                <h2
-                  className="text-lg md:text-xl font-semibold"
-                  style={{ color: NAVY }}
-                >
-                  {tool.name}
-                </h2>
-              </a>
-            );
-          })}
-            </div>
-          </main>
-
-          {/* Right Sidebar - Quote Follow-ups */}
-          <div className="hidden lg:block w-64 shrink-0">
-            <div className="bg-white rounded-2xl p-4 shadow-sm sticky top-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold flex items-center gap-2 text-sm" style={{ color: NAVY }}>
-                  <AlertCircle className="w-4 h-4 text-red-500" />
-                  Follow-ups
-                  {!quotesLoading && !quotesError && (
-                    <span className="px-1.5 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded-full">
-                      {visibleQuotes.length}
-                    </span>
+          <div className="max-h-[40vh] overflow-y-auto">
+            {jobsLoading ? (
+              <div className="p-4 text-[#888] text-sm">LOADING...</div>
+            ) : jobsError ? (
+              <div className="p-4 text-[#FF4444] text-sm">ERROR LOADING DATA</div>
+            ) : unscheduledJobs.length === 0 ? (
+              <div className="p-4 text-[#888] text-sm">NO UNSCHEDULED JOBS</div>
+            ) : (
+              unscheduledJobs.map((job, i) => (
+                <div key={job.id} className={`px-4 py-3 border-b border-[#222] ${i % 2 === 0 ? 'bg-[#0a0a0a]' : 'bg-[#111]'}`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-white text-sm truncate flex-1">{job.customerName}</span>
+                    {job.targetDate && (
+                      <span className="text-[#FFB800] text-xs ml-2">{formatDate(job.targetDate)}</span>
+                    )}
+                  </div>
+                  {job.jobType && (
+                    <div className="text-[#888] text-xs mt-1">{job.jobType}</div>
                   )}
-                </h3>
-                <button
-                  onClick={syncFollowUps}
-                  disabled={syncing || !user}
-                  className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
-                  title="Sync follow-ups to To Do list"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin' : ''}`} style={{ color: NAVY }} />
-                </button>
-              </div>
-              {syncResult && (
-                <p className={`text-xs mb-2 ${syncResult.startsWith('Error') ? 'text-red-500' : 'text-green-600'}`}>
-                  {syncResult}
-                </p>
-              )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
 
-              {quotesLoading ? (
-                <p className="text-xs text-slate-400">Loading...</p>
-              ) : quotesError ? (
-                <p className="text-xs text-red-500 flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3" />
-                  Error loading
-                </p>
-              ) : visibleQuotes.length === 0 ? (
-                <p className="text-xs text-slate-400">No pending follow-ups</p>
-              ) : (
-                <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-                  {visibleQuotes.map((quote) => (
-                    <div
-                      key={quote.id}
-                      className="p-2 bg-red-50 rounded-lg text-xs group relative"
-                    >
+        {/* Panel 2: Quote Follow-ups */}
+        <div className="border border-[#333] bg-[#0a0a0a]">
+          <div className="bg-[#FF4444] text-black px-4 py-2 flex items-center justify-between">
+            <span className="text-sm font-bold tracking-wide">FOLLOW-UPS</span>
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-bold">{visibleQuotes.length}</span>
+              <button
+                onClick={syncFollowUps}
+                disabled={syncing || !user}
+                className="disabled:opacity-50"
+                title="Sync to TODO"
+              >
+                <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+          </div>
+          {syncResult && (
+            <div className={`px-4 py-1.5 text-xs ${syncResult.includes('ERR') || syncResult.includes('FAIL') ? 'text-[#FF4444]' : 'text-[#00D46A]'}`}>
+              {syncResult}
+            </div>
+          )}
+          <div className="max-h-[40vh] overflow-y-auto">
+            {quotesLoading ? (
+              <div className="p-4 text-[#888] text-sm">LOADING...</div>
+            ) : quotesError ? (
+              <div className="p-4 text-[#FF4444] text-sm">ERROR LOADING DATA</div>
+            ) : visibleQuotes.length === 0 ? (
+              <div className="p-4 text-[#888] text-sm">NO PENDING FOLLOW-UPS</div>
+            ) : (
+              visibleQuotes.map((quote, i) => (
+                <div key={quote.id} className={`px-4 py-3 border-b border-[#222] group ${i % 2 === 0 ? 'bg-[#0a0a0a]' : 'bg-[#111]'}`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-white text-sm truncate flex-1">{quote.customerName}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[#FF4444] text-xs">{quote.hoursAgo}H AGO</span>
                       <button
                         onClick={() => dismissQuote(quote.id)}
-                        className="absolute top-1 right-1 p-0.5 rounded hover:bg-red-200 opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Dismiss"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
                       >
-                        <X className="w-3 h-3 text-red-600" />
+                        <X className="w-4 h-4 text-[#888] hover:text-[#FF4444]" />
                       </button>
-                      <div className="flex items-center justify-between pr-4">
-                        <p className="font-medium truncate" style={{ color: NAVY }}>
-                          {quote.customerName}
-                        </p>
-                        <span className="text-red-600 shrink-0 ml-1">
-                          {quote.hoursAgo}h
-                        </span>
-                      </div>
-                      <div className="flex flex-col gap-1 mt-1">
-                        {quote.phoneNumber && (
-                          <a
-                            href={`tel:${quote.phoneNumber}`}
-                            className="text-blue-600 hover:underline flex items-center gap-1"
-                          >
-                            <Phone className="w-3 h-3" />
-                            {quote.phoneNumber}
-                          </a>
-                        )}
-                        {quote.quoteLink && (
-                          <a
-                            href={quote.quoteLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline flex items-center gap-1"
-                          >
-                            <ExternalLink className="w-3 h-3" />
-                            View Quote
-                          </a>
-                        )}
-                      </div>
                     </div>
-                  ))}
+                  </div>
+                  <div className="flex items-center gap-4 mt-1.5">
+                    {quote.phoneNumber && (
+                      <a href={`tel:${quote.phoneNumber}`} className="text-[#00D4FF] text-xs hover:underline flex items-center gap-1">
+                        <Phone className="w-3.5 h-3.5" />
+                        {quote.phoneNumber}
+                      </a>
+                    )}
+                    {quote.quoteLink && (
+                      <a href={quote.quoteLink} target="_blank" rel="noopener noreferrer" className="text-[#00D4FF] text-xs hover:underline flex items-center gap-1">
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        QUOTE
+                      </a>
+                    )}
+                  </div>
                 </div>
-              )}
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Panel 3: Today's Tasks */}
+        <div className="border border-[#333] bg-[#0a0a0a]">
+          <div className="bg-[#00D46A] text-black px-4 py-2 flex items-center justify-between">
+            <span className="text-sm font-bold tracking-wide">TODAY&apos;S TASKS</span>
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-bold">{incompleteTasks.length}</span>
+              <a href="/today">
+                <ExternalLink className="w-4 h-4" />
+              </a>
             </div>
+          </div>
+          <div className="max-h-[40vh] overflow-y-auto">
+            {tasksLoading ? (
+              <div className="p-4 text-[#888] text-sm">LOADING...</div>
+            ) : tasksError ? (
+              <div className="p-4 text-[#FF4444] text-sm">ERROR LOADING DATA</div>
+            ) : todayTasks.length === 0 ? (
+              <div className="p-4 text-[#888] text-sm">NO TASKS FOR TODAY</div>
+            ) : (
+              <>
+                {incompleteTasks.map((task, i) => (
+                  <div
+                    key={task.id}
+                    onClick={() => toggleTaskComplete(task)}
+                    className={`px-4 py-3 border-b border-[#222] cursor-pointer hover:bg-[#1a1a1a] ${i % 2 === 0 ? 'bg-[#0a0a0a]' : 'bg-[#111]'}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 border border-[#00D46A] flex-shrink-0" />
+                      <span className="text-white text-sm truncate">{task.title}</span>
+                    </div>
+                  </div>
+                ))}
+                {completedTasks.length > 0 && (
+                  <>
+                    <div className="px-4 py-2 bg-[#111] text-[#888] text-xs border-b border-[#222]">
+                      COMPLETED ({completedTasks.length})
+                    </div>
+                    {completedTasks.slice(0, 3).map((task, i) => (
+                      <div
+                        key={task.id}
+                        onClick={() => toggleTaskComplete(task)}
+                        className={`px-4 py-3 border-b border-[#222] cursor-pointer hover:bg-[#1a1a1a] opacity-50 ${i % 2 === 0 ? 'bg-[#0a0a0a]' : 'bg-[#111]'}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-4 h-4 bg-[#00D46A] flex-shrink-0 flex items-center justify-center text-black text-[10px] font-bold">✓</div>
+                          <span className="text-[#888] text-sm truncate line-through">{task.title}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>
 
       {/* Footer */}
-      <footer className="text-center py-6 text-sm text-slate-400">
-        Handld Command Center
+      <footer className="mt-3 border border-[#333] bg-[#111] px-4 py-2.5 flex items-center justify-between text-xs">
+        <span className="text-[#888]">HANDLD HOME SERVICES</span>
+        <div className="flex items-center gap-4">
+          <span className="text-[#888]">SYS: <span className="text-[#00D46A]">ONLINE</span></span>
+          <span className="text-[#888]">API: <span className="text-[#00D46A]">OK</span></span>
+          <TrendingUp className="w-4 h-4 text-[#00D46A]" />
+        </div>
       </footer>
     </div>
   );

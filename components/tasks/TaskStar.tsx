@@ -18,15 +18,15 @@ export function TaskStar({ starred, onChange, disabled }: TaskStarProps) {
       animate={starred ? { scale: [1, 1.2, 1] } : {}}
       transition={{ duration: 0.2 }}
       className={`
-        p-1 rounded transition-colors
-        ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-black/5'}
+        p-1 transition-colors
+        ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-[#222]'}
       `}
     >
       <Star
         className={`w-4 h-4 transition-colors ${
           starred
-            ? 'fill-[var(--wl-star-active)] text-[var(--wl-star-active)]'
-            : 'text-[var(--wl-star-inactive)]'
+            ? 'fill-[#FFB800] text-[#FFB800]'
+            : 'text-[#555] hover:text-[#FFB800]'
         }`}
       />
     </motion.button>

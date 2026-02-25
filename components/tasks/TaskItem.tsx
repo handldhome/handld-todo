@@ -1,13 +1,8 @@
 'use client';
 
-import { TaskCheckbox } from './TaskCheckbox';
-import { TaskStar } from './TaskStar';
-import { Calendar, ListChecks, Folder } from 'lucide-react';
+import { Calendar, ListChecks, Star } from 'lucide-react';
 import { formatDueDate, isOverdue } from '@/lib/dateUtils';
 import type { Task } from '@/types';
-
-const NAVY = '#2A54A1';
-const NAVY_COMPLETED = '#7A9BD4';
 
 interface TaskItemProps {
   task: Task;
@@ -16,6 +11,7 @@ interface TaskItemProps {
   onToggleComplete: () => void;
   onToggleStar: () => void;
   showListName?: boolean;
+  showDueDate?: boolean;
   listName?: string;
 }
 
@@ -26,6 +22,7 @@ export function TaskItem({
   onToggleComplete,
   onToggleStar,
   showListName,
+  showDueDate = true,
   listName,
 }: TaskItemProps) {
   const completedSubtasks = task.subtasks?.filter(s => s.is_completed).length || 0;
@@ -35,73 +32,84 @@ export function TaskItem({
     <div
       onClick={onSelect}
       className={`
-        flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer
-        bg-white/80 backdrop-blur-sm border border-transparent
-        transition-all duration-150
+        flex items-center gap-3 px-4 py-3 cursor-pointer border-l-2
+        transition-colors
         ${isSelected
-          ? 'border-[#2A54A1] shadow-sm'
-          : 'hover:bg-white hover:shadow-sm'
+          ? 'bg-[#1a1a1a] border-[#FF6600]'
+          : 'border-transparent hover:bg-[#111]'
         }
-        ${task.is_completed ? 'opacity-60' : ''}
+        ${task.is_completed ? 'opacity-50' : ''}
       `}
-      style={{ color: NAVY }}
     >
       {/* Checkbox */}
-      <TaskCheckbox
-        checked={task.is_completed}
-        onChange={(e) => {
+      <button
+        onClick={(e) => {
           e.stopPropagation();
           onToggleComplete();
         }}
-      />
+        className={`w-4 h-4 border flex-shrink-0 flex items-center justify-center
+          ${task.is_completed
+            ? 'bg-[#00D46A] border-[#00D46A]'
+            : 'border-[#FF6600] bg-transparent hover:bg-[#FF6600]/20'
+          }`}
+      >
+        {task.is_completed && (
+          <span className="text-black text-[10px] font-bold">✓</span>
+        )}
+      </button>
 
       {/* Task content */}
       <div className="flex-1 min-w-0">
-        <p
-          className={`text-[15px] truncate ${task.is_completed ? 'line-through' : ''}`}
-          style={{ color: task.is_completed ? NAVY_COMPLETED : NAVY }}
+        <span
+          className={`text-sm ${task.is_completed ? 'line-through text-[#555]' : 'text-white'}`}
         >
           {task.title}
-        </p>
+        </span>
       </div>
 
       {/* Metadata */}
       <div className="flex items-center gap-3 shrink-0">
         {/* List name */}
         {showListName && listName && (
-          <span className="flex items-center gap-1 text-xs px-2 py-0.5 bg-gray-100 rounded" style={{ color: NAVY }}>
-            <Folder className="w-3 h-3" />
-            {listName}
-          </span>
+          <span className="hidden md:inline text-xs text-[#888] uppercase">{listName}</span>
         )}
 
         {/* Due date */}
-        {task.due_date && !task.is_completed && (
+        {showDueDate && task.due_date && !task.is_completed && (
           <span
-            className="flex items-center gap-1 text-xs"
-            style={{ color: isOverdue(task.due_date) ? '#DC2626' : NAVY }}
+            className={`hidden sm:flex items-center gap-1 text-xs ${
+              isOverdue(task.due_date) ? 'text-[#FF4444]' : 'text-[#888]'
+            }`}
           >
             <Calendar className="w-3.5 h-3.5" />
-            {formatDueDate(task.due_date)}
+            {formatDueDate(task.due_date).toUpperCase()}
           </span>
         )}
 
         {/* Subtasks indicator */}
         {totalSubtasks > 0 && (
-          <span className="flex items-center gap-1 text-xs" style={{ color: NAVY }}>
+          <span className="flex items-center gap-1 text-xs text-[#888]">
             <ListChecks className="w-3.5 h-3.5" />
             {completedSubtasks}/{totalSubtasks}
           </span>
         )}
 
         {/* Star */}
-        <TaskStar
-          starred={task.is_starred}
-          onChange={(e) => {
+        <button
+          onClick={(e) => {
             e.stopPropagation();
             onToggleStar();
           }}
-        />
+          className="p-0.5"
+        >
+          <Star
+            className={`w-4 h-4 ${
+              task.is_starred
+                ? 'fill-[#FFB800] text-[#FFB800]'
+                : 'text-[#555] hover:text-[#FFB800]'
+            }`}
+          />
+        </button>
       </div>
     </div>
   );

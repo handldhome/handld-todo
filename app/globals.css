@@ -1,230 +1,181 @@
 @import "tailwindcss";
 
 :root {
-  /* Handld Color Palette - Navy Theme */
-  --wl-red: #2A54A1;
-  --wl-red-dark: #1E3D7A;
-  --wl-sidebar-bg: #FAFAFA;
-  --wl-sidebar-selected: #FFFFFF;
-  --wl-sidebar-text: #2A54A1;
-  --wl-sidebar-count: #2A54A1;
-  --wl-wood-light: #DEB887;
-  --wl-wood-dark: #8B4513;
-  --wl-star-active: #F5A623;
-  --wl-star-inactive: #CCCCCC;
-  --wl-checkbox-border: #2A54A1;
-  --wl-checkbox-checked: #2A54A1;
-  --wl-text-primary: #2A54A1;
-  --wl-text-secondary: #2A54A1;
-  --wl-text-completed: #7A9BD4;
-  --wl-divider: #E5E5E5;
+  /* Bloomberg Terminal Color Palette */
+  --bb-black: #000000;
+  --bb-dark: #0a0a0a;
+  --bb-panel: #111111;
+  --bb-border: #333333;
+  --bb-orange: #FF6600;
+  --bb-orange-dim: #CC5200;
+  --bb-amber: #FFB800;
+  --bb-green: #00D46A;
+  --bb-red: #FF4444;
+  --bb-cyan: #00D4FF;
+  --bb-white: #FFFFFF;
+  --bb-gray: #888888;
+  --bb-gray-dim: #555555;
 
   /* Layout */
-  --sidebar-width: 280px;
-  --detail-panel-width: 400px;
-  --task-item-height: 52px;
+  --sidebar-width: 240px;
+  --detail-panel-width: 360px;
+  --task-item-height: 44px;
 
   /* Backgrounds */
-  --background: #FFFFFF;
-  --foreground: #2A54A1;
+  --background: var(--bb-black);
+  --foreground: var(--bb-white);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-wl-red: var(--wl-red);
-  --color-wl-red-dark: var(--wl-red-dark);
-  --color-wl-sidebar-bg: var(--wl-sidebar-bg);
-  --color-wl-sidebar-selected: var(--wl-sidebar-selected);
-  --color-wl-sidebar-text: var(--wl-sidebar-text);
-  --color-wl-sidebar-count: var(--wl-sidebar-count);
-  --color-wl-star-active: var(--wl-star-active);
-  --color-wl-star-inactive: var(--wl-star-inactive);
-  --color-wl-checkbox-border: var(--wl-checkbox-border);
-  --color-wl-checkbox-checked: var(--wl-checkbox-checked);
-  --color-wl-text-primary: var(--wl-text-primary);
-  --color-wl-text-secondary: var(--wl-text-secondary);
-  --color-wl-text-completed: var(--wl-text-completed);
-  --color-wl-divider: var(--wl-divider);
-  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-}
-
-/* Theme classes - all use navy text */
-.theme-wood {
-  --background: #FFFFFF;
-  --content-bg: #f5e6d3;
-}
-
-.theme-minimal {
-  --background: #FFFFFF;
-  --content-bg: #f8f9fa;
-  --wl-sidebar-bg: #FFFFFF;
-}
-
-.theme-dark {
-  --background: #1a1a1a;
-  --content-bg: #242424;
-  --wl-sidebar-bg: #1a1a1a;
-  --wl-sidebar-selected: #333333;
-  --wl-divider: #3a3a3a;
-  /* Keep text navy even in dark mode for readability on light task cards */
+  --font-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', monospace;
+  --font-sans: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', monospace;
 }
 
 body {
-  background: var(--background);
-  color: #2A54A1;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background: var(--bb-black);
+  color: var(--bb-white);
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', monospace;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
-/* Force navy text everywhere */
-* {
-  color: inherit;
-}
+/* Bloomberg-style text colors */
+.text-bb-orange { color: var(--bb-orange); }
+.text-bb-amber { color: var(--bb-amber); }
+.text-bb-green { color: var(--bb-green); }
+.text-bb-red { color: var(--bb-red); }
+.text-bb-cyan { color: var(--bb-cyan); }
+.text-bb-gray { color: var(--bb-gray); }
+.text-bb-white { color: var(--bb-white); }
 
+.bg-bb-black { background-color: var(--bb-black); }
+.bg-bb-dark { background-color: var(--bb-dark); }
+.bg-bb-panel { background-color: var(--bb-panel); }
+.bg-bb-orange { background-color: var(--bb-orange); }
+
+.border-bb-border { border-color: var(--bb-border); }
+.border-bb-orange { border-color: var(--bb-orange); }
+
+/* Input styling */
 input, textarea, select {
-  color: #2A54A1;
+  background: var(--bb-dark) !important;
+  background-color: var(--bb-dark) !important;
+  color: var(--bb-white) !important;
+  border: 1px solid var(--bb-border) !important;
+  font-family: inherit;
+  border-radius: 0 !important;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+/* Override autofill styles */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus,
+select:-webkit-autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+textarea:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px var(--bb-dark) inset !important;
+  -webkit-text-fill-color: var(--bb-white) !important;
+  background-color: var(--bb-dark) !important;
+  color: var(--bb-white) !important;
+  caret-color: var(--bb-white) !important;
+}
+
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23FF6600' d='M6 8L2 4h8z'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 8px center !important;
+  padding-right: 28px !important;
+}
+
+select option {
+  background: var(--bb-dark) !important;
+  background-color: var(--bb-dark) !important;
+  color: var(--bb-white) !important;
+  padding: 8px;
+}
+
+input[type="date"],
+input[type="date"]::-webkit-datetime-edit,
+input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+input[type="date"]::-webkit-datetime-edit-text,
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-year-field {
+  color: var(--bb-white) !important;
+  background: var(--bb-dark) !important;
+  color-scheme: dark;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.6;
+  cursor: pointer;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
 }
 
 input::placeholder, textarea::placeholder {
-  color: #2A54A1;
-  opacity: 0.5;
+  color: var(--bb-gray) !important;
+  opacity: 0.7;
 }
 
-/* Main content background - theme aware */
-.content-background {
-  background-color: var(--content-bg, #f5e6d3);
+input:focus, textarea:focus, select:focus {
+  outline: none !important;
+  border-color: var(--bb-orange) !important;
 }
 
-/* Wood texture background for main task area */
-.theme-wood .content-background {
-  background-color: #f5e6d3;
-  background-image:
-    repeating-linear-gradient(
-      90deg,
-      transparent,
-      transparent 50px,
-      rgba(139, 69, 19, 0.03) 50px,
-      rgba(139, 69, 19, 0.03) 51px
-    ),
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 10px,
-      rgba(222, 184, 135, 0.1) 10px,
-      rgba(222, 184, 135, 0.1) 11px
-    ),
-    linear-gradient(
-      90deg,
-      #f5e6d3 0%,
-      #efe0cc 25%,
-      #f5e6d3 50%,
-      #efe0cc 75%,
-      #f5e6d3 100%
-    );
+/* Force text selection to be visible on dark background */
+::selection {
+  background: var(--bb-orange) !important;
+  color: var(--bb-black) !important;
 }
 
-/* Minimal theme - clean white */
-.theme-minimal .content-background {
-  background-color: #f8f9fa;
+::-moz-selection {
+  background: var(--bb-orange) !important;
+  color: var(--bb-black) !important;
 }
 
-/* Dark theme background */
-.theme-dark .content-background {
-  background-color: #242424;
-}
-
-/* Custom scrollbar */
+/* Scrollbar - Bloomberg style */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--bb-black);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--wl-divider);
-  border-radius: 4px;
+  background: var(--bb-border);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #2A54A1;
+  background: var(--bb-orange);
 }
 
-/* Task strikethrough animation */
-@keyframes strikethrough {
-  from {
-    width: 0;
-  }
-  to {
-    width: 100%;
-  }
-}
-
-.task-completed .task-title {
-  position: relative;
-  color: #7A9BD4;
-}
-
-.task-completed .task-title::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  height: 1px;
-  background: #7A9BD4;
-  animation: strikethrough 200ms ease-out forwards;
-}
-
-/* Checkbox animation */
-@keyframes checkmark-draw {
-  from {
-    stroke-dashoffset: 24;
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-@keyframes checkbox-fill {
-  from {
-    transform: scale(0);
-  }
-  to {
-    transform: scale(1);
-  }
-}
-
-/* Star animation */
-@keyframes star-bounce {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.2);
-  }
-}
-
-.star-active {
-  animation: star-bounce 200ms ease-out;
-}
-
-/* Focus visible for accessibility */
+/* Focus visible */
 *:focus-visible {
-  outline: 2px solid #2A54A1;
-  outline-offset: 2px;
-}
-
-/* Keyboard focus indicator for task items */
-.task-item-focused {
-  box-shadow: inset 0 0 0 2px #2A54A1;
+  outline: 1px solid var(--bb-orange);
+  outline-offset: 1px;
 }
 
 /* Smooth transitions */
 a, button, input, textarea, select {
-  transition-property: background-color, border-color, opacity;
-  transition-duration: 150ms;
+  transition-property: background-color, border-color, color, opacity;
+  transition-duration: 100ms;
   transition-timing-function: ease-out;
 }
 
@@ -237,4 +188,101 @@ a, button, input, textarea, select {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Bloomberg panel styling */
+.bb-panel {
+  background: var(--bb-panel);
+  border: 1px solid var(--bb-border);
+}
+
+.bb-panel-header {
+  background: var(--bb-orange);
+  color: var(--bb-black);
+  font-weight: 600;
+  padding: 4px 8px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.bb-data-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--bb-border);
+}
+
+.bb-data-row:last-child {
+  border-bottom: none;
+}
+
+.bb-label {
+  color: var(--bb-gray);
+  font-size: 11px;
+}
+
+.bb-value {
+  color: var(--bb-white);
+  font-size: 12px;
+}
+
+/* Task checkbox - Bloomberg style */
+.bb-checkbox {
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--bb-orange);
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bb-checkbox.checked {
+  background: var(--bb-orange);
+}
+
+.bb-checkbox.checked::after {
+  content: '✓';
+  color: var(--bb-black);
+  font-size: 10px;
+  font-weight: bold;
+}
+
+/* Star - Bloomberg style */
+.bb-star {
+  color: var(--bb-gray-dim);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.bb-star.active {
+  color: var(--bb-amber);
+}
+
+/* Button styles */
+.bb-button {
+  background: var(--bb-dark);
+  border: 1px solid var(--bb-orange);
+  color: var(--bb-orange);
+  padding: 4px 12px;
+  font-size: 11px;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.bb-button:hover {
+  background: var(--bb-orange);
+  color: var(--bb-black);
+}
+
+.bb-button-primary {
+  background: var(--bb-orange);
+  color: var(--bb-black);
+}
+
+.bb-button-primary:hover {
+  background: var(--bb-amber);
 }

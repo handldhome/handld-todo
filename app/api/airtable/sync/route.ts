@@ -56,11 +56,29 @@ export async function POST(request: Request) {
       clientsList = inboxList;
     }
 
+    // If no Inbox exists, create one (using service role to bypass RLS)
     if (!clientsList) {
-      return NextResponse.json(
-        { error: 'No Clients or Inbox list found. Please create a list first.' },
-        { status: 404 }
-      );
+      const { data: newInbox, error: createError } = await supabase
+        .from('lists')
+        .insert({
+          user_id: userId,
+          name: 'Inbox',
+          is_inbox: true,
+          position: 0,
+          color: '#2A54A1',
+          icon: 'inbox',
+        })
+        .select('id')
+        .single();
+
+      if (createError) {
+        return NextResponse.json(
+          { error: `Failed to create Inbox: ${createError.message}` },
+          { status: 500 }
+        );
+      }
+
+      clientsList = newInbox;
     }
 
     // 1. Fetch pending quotes from Airtable (same criteria as Command Center widget)

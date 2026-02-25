@@ -89,7 +89,8 @@ export function TaskList({ listId, listType, title }: TaskListProps) {
             query = query.eq('is_starred', true);
             break;
           case 'today':
-            query = query.eq('due_date', getLocalToday());
+            // Include today and all overdue tasks (due_date <= today)
+            query = query.lte('due_date', getLocalToday());
             break;
           case 'completed':
             query = query.eq('is_completed', true);
@@ -301,16 +302,14 @@ export function TaskList({ listId, listType, title }: TaskListProps) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-pulse" style={{ color: '#2A54A1' }}>
-          Loading tasks...
-        </div>
+      <div className="flex items-center justify-center h-full bg-black">
+        <div className="text-[#888] text-xs uppercase">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full bg-black">
       {/* Task list */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Quick add */}
@@ -320,14 +319,13 @@ export function TaskList({ listId, listType, title }: TaskListProps) {
 
         {/* Sort controls */}
         {tasks.length > 0 && (
-          <div className="px-4 py-2 flex justify-end relative">
+          <div className="px-3 py-2 flex justify-end relative border-b border-[#333]">
             <button
               onClick={() => setShowSortMenu(!showSortMenu)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg hover:bg-gray-100 transition-colors"
-              style={{ color: '#2A54A1' }}
+              className="flex items-center gap-1.5 px-2 py-1 text-[10px] text-[#888] hover:text-[#FF6600] uppercase"
             >
-              <ArrowUpDown className="w-4 h-4" />
-              Sort: {sortBy === 'date' ? 'Due Date' : sortBy === 'starred' ? 'Starred' : sortBy === 'list' ? 'List' : 'Created'}
+              <ArrowUpDown className="w-3 h-3" />
+              Sort: {sortBy === 'date' ? 'Date' : sortBy === 'starred' ? 'Star' : sortBy === 'list' ? 'List' : 'New'}
             </button>
             {showSortMenu && (
               <>
@@ -335,34 +333,30 @@ export function TaskList({ listId, listType, title }: TaskListProps) {
                   className="fixed inset-0 z-10"
                   onClick={() => setShowSortMenu(false)}
                 />
-                <div className="absolute right-4 top-full mt-1 z-20 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[140px]">
+                <div className="absolute right-3 top-full mt-1 z-20 bg-[#111] border border-[#333] py-1 min-w-[120px]">
                   <button
                     onClick={() => { setSortBy('date'); setShowSortMenu(false); }}
-                    className={`w-full px-3 py-1.5 text-left text-sm hover:bg-gray-100 ${sortBy === 'date' ? 'font-medium' : ''}`}
-                    style={{ color: '#2A54A1' }}
+                    className={`w-full px-3 py-1.5 text-left text-[10px] uppercase hover:bg-[#1a1a1a] ${sortBy === 'date' ? 'text-[#FF6600]' : 'text-white'}`}
                   >
                     Due Date
                   </button>
                   <button
                     onClick={() => { setSortBy('starred'); setShowSortMenu(false); }}
-                    className={`w-full px-3 py-1.5 text-left text-sm hover:bg-gray-100 ${sortBy === 'starred' ? 'font-medium' : ''}`}
-                    style={{ color: '#2A54A1' }}
+                    className={`w-full px-3 py-1.5 text-left text-[10px] uppercase hover:bg-[#1a1a1a] ${sortBy === 'starred' ? 'text-[#FF6600]' : 'text-white'}`}
                   >
-                    Starred First
+                    Starred
                   </button>
                   <button
                     onClick={() => { setSortBy('list'); setShowSortMenu(false); }}
-                    className={`w-full px-3 py-1.5 text-left text-sm hover:bg-gray-100 ${sortBy === 'list' ? 'font-medium' : ''}`}
-                    style={{ color: '#2A54A1' }}
+                    className={`w-full px-3 py-1.5 text-left text-[10px] uppercase hover:bg-[#1a1a1a] ${sortBy === 'list' ? 'text-[#FF6600]' : 'text-white'}`}
                   >
                     List
                   </button>
                   <button
                     onClick={() => { setSortBy('created'); setShowSortMenu(false); }}
-                    className={`w-full px-3 py-1.5 text-left text-sm hover:bg-gray-100 ${sortBy === 'created' ? 'font-medium' : ''}`}
-                    style={{ color: '#2A54A1' }}
+                    className={`w-full px-3 py-1.5 text-left text-[10px] uppercase hover:bg-[#1a1a1a] ${sortBy === 'created' ? 'text-[#FF6600]' : 'text-white'}`}
                   >
-                    Recently Created
+                    Recent
                   </button>
                 </div>
               </>
@@ -374,17 +368,17 @@ export function TaskList({ listId, listType, title }: TaskListProps) {
         <div className="flex-1 overflow-y-auto">
           {sortedTasks.length === 0 && completedTasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center p-8">
-              <p className="text-lg" style={{ color: '#2A54A1' }}>
+              <p className="text-xs text-[#888] uppercase">
                 {listType === 'completed'
-                  ? 'No completed tasks yet'
-                  : 'No tasks yet. Press N to add one!'}
+                  ? 'No completed tasks'
+                  : 'No tasks - Press N to add'}
               </p>
-              <p className="text-sm mt-2" style={{ color: '#2A54A1' }}>
-                Press ? for keyboard shortcuts
+              <p className="text-[10px] text-[#555] mt-2 uppercase">
+                Press ? for shortcuts
               </p>
             </div>
           ) : (
-            <div className="p-4 space-y-1">
+            <div className="p-2">
               <AnimatePresence mode="popLayout">
                 {sortedTasks.map((task) => (
                   <motion.div
@@ -393,7 +387,7 @@ export function TaskList({ listId, listType, title }: TaskListProps) {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, x: -100 }}
-                    transition={{ duration: 0.2 }}
+                    transition={{ duration: 0.15 }}
                   >
                     <TaskItem
                       task={task}
@@ -401,7 +395,8 @@ export function TaskList({ listId, listType, title }: TaskListProps) {
                       onSelect={() => setSelectedTaskId(task.id)}
                       onToggleComplete={() => handleToggleComplete(task)}
                       onToggleStar={() => handleToggleStar(task)}
-                      showListName={listType === 'all' || listType === 'starred' || listType === 'today'}
+                      showListName={listType === 'all' || listType === 'starred'}
+                      showDueDate={listType !== 'today'}
                       listName={listNameMap[task.list_id]}
                     />
                   </motion.div>
@@ -410,16 +405,15 @@ export function TaskList({ listId, listType, title }: TaskListProps) {
 
               {/* Completed section */}
               {completedTasks.length > 0 && listType !== 'completed' && (
-                <div className="mt-6">
+                <div className="mt-4 border-t border-[#333] pt-2">
                   <button
                     onClick={() => setShowCompleted(!showCompleted)}
-                    className="flex items-center gap-2 px-3 py-2 text-sm transition-colors"
-                    style={{ color: '#2A54A1' }}
+                    className="flex items-center gap-2 px-3 py-1.5 text-[10px] text-[#888] hover:text-white uppercase"
                   >
                     {showCompleted ? (
-                      <ChevronDown className="w-4 h-4" />
+                      <ChevronDown className="w-3 h-3" />
                     ) : (
-                      <ChevronRight className="w-4 h-4" />
+                      <ChevronRight className="w-3 h-3" />
                     )}
                     <span>Completed ({completedTasks.length})</span>
                   </button>
@@ -430,10 +424,10 @@ export function TaskList({ listId, listType, title }: TaskListProps) {
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
+                        transition={{ duration: 0.15 }}
                         className="overflow-hidden"
                       >
-                        <div className="space-y-1 mt-2">
+                        <div className="mt-1">
                           {completedTasks.map((task) => (
                             <TaskItem
                               key={task.id}

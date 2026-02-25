@@ -7,8 +7,6 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { Plus } from 'lucide-react';
 import type { SmartListType } from '@/types';
 
-const NAVY = '#2A54A1';
-
 interface TaskQuickAddProps {
   listId?: string;
   listType?: SmartListType;
@@ -23,10 +21,8 @@ export const TaskQuickAdd = forwardRef<HTMLInputElement, TaskQuickAddProps>(
     const queryClient = useQueryClient();
     const inputRef = useRef<HTMLInputElement>(null);
 
-    // Forward the ref
     useImperativeHandle(ref, () => inputRef.current as HTMLInputElement);
 
-    // Get inbox list if needed
     const [effectiveListId, setEffectiveListId] = useState<string | undefined>(listId);
 
     useEffect(() => {
@@ -46,7 +42,6 @@ export const TaskQuickAdd = forwardRef<HTMLInputElement, TaskQuickAddProps>(
       mutationFn: async (taskTitle: string) => {
         if (!effectiveListId || !user) throw new Error('No list selected');
 
-        // Get highest position
         const { data: lastTask } = await supabase
           .from('tasks')
           .select('position')
@@ -57,11 +52,9 @@ export const TaskQuickAdd = forwardRef<HTMLInputElement, TaskQuickAddProps>(
 
         const position = (lastTask?.position ?? -1) + 1;
 
-        // Parse for starred flag
         const isStarred = taskTitle.includes('!starred');
         const cleanTitle = taskTitle.replace('!starred', '').trim();
 
-        // Parse for date (simple natural language)
         let dueDate: string | null = null;
         const today = new Date();
         if (taskTitle.toLowerCase().includes('today')) {
@@ -103,20 +96,16 @@ export const TaskQuickAdd = forwardRef<HTMLInputElement, TaskQuickAddProps>(
     };
 
     return (
-      <form onSubmit={handleSubmit} className="p-4">
+      <form onSubmit={handleSubmit} className="p-3 border-b border-[#333]">
         <div
           onClick={handleContainerClick}
           className={`
-            flex items-center gap-3 px-4 py-3 rounded-lg cursor-text
-            bg-white/80 backdrop-blur-sm border
-            transition-all duration-200
-            ${isFocused
-              ? 'border-[#2A54A1] shadow-sm'
-              : 'border-transparent hover:bg-white hover:shadow-sm'
-            }
+            flex items-center gap-3 px-4 py-3 cursor-text
+            bg-[#111] border transition-colors
+            ${isFocused ? 'border-[#FF6600]' : 'border-[#333] hover:border-[#555]'}
           `}
         >
-          <Plus className="w-5 h-5 cursor-pointer" style={{ color: NAVY }} onClick={handleContainerClick} />
+          <Plus className="w-5 h-5 text-[#FF6600]" />
           <input
             ref={inputRef}
             type="text"
@@ -124,9 +113,8 @@ export const TaskQuickAdd = forwardRef<HTMLInputElement, TaskQuickAddProps>(
             onChange={(e) => setTitle(e.target.value)}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            placeholder="Add a task... (Press N)"
-            className="flex-1 bg-transparent outline-none text-[15px]"
-            style={{ color: NAVY }}
+            placeholder="Add task... (press N)"
+            className="flex-1 bg-transparent outline-none text-sm text-white placeholder-[#555]"
             disabled={createTask.isPending}
           />
         </div>
