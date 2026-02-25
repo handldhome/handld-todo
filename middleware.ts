@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { updateSession } from '@/lib/supabase/middleware';
+import { updateSession } from './lib/supabase/middleware';
 
 // Security key for Command Center access
 const VALID_KEYS = ['alia']; // Add more keys as needed
