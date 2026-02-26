@@ -75,7 +75,7 @@ const tools = [
   { name: 'AVAIL', icon: UserCheck, href: 'https://schedule.handldhome.com/admin?key=alia&tab=availability', key: 'a' },
   { name: 'TODO', icon: CheckSquare, href: '/today', key: 'd' },
   { name: 'WEBSITE', icon: Globe, href: 'https://handldhome.com', key: 'w' },
-  { name: 'PRO', icon: Rocket, href: 'https://pro.handldhome.com', key: 'p' },
+  { name: 'PRO', icon: Rocket, href: 'https://pro.handldhome.com/admin', key: 'p' },
 ];
 
 function getWeatherIcon(iconCode: string) {
