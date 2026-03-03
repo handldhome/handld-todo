@@ -28,6 +28,12 @@ import {
   CheckCircle2,
   TrendingUp,
   Activity,
+  Video,
+  MapPin,
+  Users,
+  ChevronDown,
+  ChevronUp,
+  Link2,
 } from 'lucide-react';
 
 interface WeatherData {
@@ -63,6 +69,17 @@ interface TodoTask {
   is_completed: boolean;
   is_starred: boolean;
   due_date: string;
+}
+
+interface CalendarEvent {
+  id: string;
+  title: string;
+  start: string;
+  end: string;
+  location?: string;
+  description?: string;
+  meetLink?: string;
+  attendees?: Array<{ email: string; name?: string; status?: string }>;
 }
 
 const WEATHER_API_KEY = '5fef1daf633f6e100c89a58c25220c72';
@@ -119,6 +136,10 @@ export default function CommandCenter() {
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(getCurrentTime());
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
+  const [calendarLoading, setCalendarLoading] = useState(true);
+  const [calendarNeedsAuth, setCalendarNeedsAuth] = useState(false);
+  const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
 
   const supabase = createClient();
 
@@ -308,6 +329,35 @@ export default function CommandCenter() {
     fetchPendingQuotes();
   }, []);
 
+  // Fetch calendar events
+  useEffect(() => {
+    async function fetchCalendarEvents() {
+      try {
+        const res = await fetch('/api/google/calendar');
+        const data = await res.json();
+        if (data.needsAuth) {
+          setCalendarNeedsAuth(true);
+        } else if (data.events) {
+          setCalendarEvents(data.events);
+          setCalendarNeedsAuth(false);
+        }
+      } catch {
+        console.error('Failed to fetch calendar');
+      } finally {
+        setCalendarLoading(false);
+      }
+    }
+    fetchCalendarEvents();
+  }, []);
+
+  const formatEventTime = (start: string, end: string) => {
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    const startTime = startDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    const endTime = endDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    return `${startTime} - ${endTime}`;
+  };
+
   const WeatherIcon = weather ? getWeatherIcon(weather.icon) : Cloud;
   const incompleteTasks = todayTasks.filter(t => !t.is_completed);
   const completedTasks = todayTasks.filter(t => t.is_completed);
@@ -367,6 +417,102 @@ export default function CommandCenter() {
         ) : (
           <span className="text-[#FF4444] text-sm">WEATHER UNAVAILABLE</span>
         )}
+      </div>
+
+      {/* Calendar Section */}
+      <div className="border border-[#333] bg-[#0a0a0a] mb-3">
+        <div className="bg-[#00D4FF] text-black px-4 py-2 flex items-center justify-between">
+          <span className="text-sm font-bold tracking-wide">TODAY&apos;S SCHEDULE</span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-bold">{calendarEvents.length}</span>
+            {!calendarNeedsAuth && (
+              <Clock className="w-4 h-4" />
+            )}
+          </div>
+        </div>
+        <div className="max-h-[30vh] overflow-y-auto">
+          {calendarLoading ? (
+            <div className="p-4 text-[#888] text-sm">LOADING CALENDAR...</div>
+          ) : calendarNeedsAuth ? (
+            <div className="p-4">
+              <p className="text-[#888] text-sm mb-3">Connect Google Calendar to see your meetings</p>
+              <a
+                href="/api/google/auth"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-[#00D4FF] text-black text-sm font-bold hover:bg-[#00B8E0] transition-colors"
+              >
+                <Calendar className="w-4 h-4" />
+                CONNECT GOOGLE CALENDAR
+              </a>
+            </div>
+          ) : calendarEvents.length === 0 ? (
+            <div className="p-4 text-[#888] text-sm">NO MEETINGS TODAY</div>
+          ) : (
+            calendarEvents.map((event, i) => (
+              <div key={event.id} className={`border-b border-[#222] ${i % 2 === 0 ? 'bg-[#0a0a0a]' : 'bg-[#111]'}`}>
+                <div
+                  className="px-4 py-3 cursor-pointer hover:bg-[#1a1a1a] transition-colors"
+                  onClick={() => setExpandedEventId(expandedEventId === event.id ? null : event.id)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <span className="text-[#00D4FF] text-xs font-medium whitespace-nowrap">
+                        {formatEventTime(event.start, event.end)}
+                      </span>
+                      <span className="text-white text-sm truncate">{event.title}</span>
+                    </div>
+                    <div className="flex items-center gap-2 ml-2">
+                      {event.meetLink && <Video className="w-4 h-4 text-[#00D46A]" />}
+                      {expandedEventId === event.id ? (
+                        <ChevronUp className="w-4 h-4 text-[#888]" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-[#888]" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+                {expandedEventId === event.id && (
+                  <div className="px-4 pb-3 space-y-2 border-t border-[#222] pt-2 bg-[#111]">
+                    {event.location && (
+                      <div className="flex items-center gap-2 text-xs text-[#888]">
+                        <MapPin className="w-3.5 h-3.5" />
+                        <span>{event.location}</span>
+                      </div>
+                    )}
+                    {event.meetLink && (
+                      <a
+                        href={event.meetLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-xs text-[#00D46A] hover:underline"
+                      >
+                        <Video className="w-3.5 h-3.5" />
+                        JOIN MEETING
+                      </a>
+                    )}
+                    {event.attendees && event.attendees.length > 0 && (
+                      <div className="flex items-start gap-2 text-xs text-[#888]">
+                        <Users className="w-3.5 h-3.5 mt-0.5" />
+                        <div className="flex flex-wrap gap-1">
+                          {event.attendees.slice(0, 5).map((a, idx) => (
+                            <span key={idx} className="bg-[#222] px-1.5 py-0.5 rounded">
+                              {a.name || a.email}
+                            </span>
+                          ))}
+                          {event.attendees.length > 5 && (
+                            <span className="text-[#888]">+{event.attendees.length - 5} more</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {event.description && (
+                      <p className="text-xs text-[#888] line-clamp-2">{event.description}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
       {/* Main Grid - Three Panels */}
