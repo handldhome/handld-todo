@@ -3,12 +3,15 @@ import { cookies } from 'next/headers';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const REDIRECT_URI = process.env.NEXT_PUBLIC_APP_URL + '/api/google/callback';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get('code');
   const error = searchParams.get('error');
+
+  // Build redirect URI from the request URL
+  const url = new URL(request.url);
+  const redirectUri = `${url.protocol}//${url.host}/api/google/callback`;
 
   if (error) {
     return NextResponse.redirect(new URL('/?google_error=' + error, request.url));
@@ -31,7 +34,7 @@ export async function GET(request: NextRequest) {
         code,
         client_id: GOOGLE_CLIENT_ID,
         client_secret: GOOGLE_CLIENT_SECRET,
-        redirect_uri: REDIRECT_URI,
+        redirect_uri: redirectUri,
         grant_type: 'authorization_code',
       }),
     });
