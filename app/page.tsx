@@ -419,105 +419,161 @@ export default function CommandCenter() {
         )}
       </div>
 
-      {/* Calendar Section */}
-      <div className="border border-[#333] bg-[#0a0a0a] mb-3">
-        <div className="bg-[#00D4FF] text-black px-4 py-2 flex items-center justify-between">
-          <span className="text-sm font-bold tracking-wide">TODAY&apos;S SCHEDULE</span>
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-bold">{calendarEvents.length}</span>
-            {!calendarNeedsAuth && (
-              <Clock className="w-4 h-4" />
+      {/* Main Grid - 2x2 Layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {/* Panel 1: Calendar */}
+        <div className="border border-[#333] bg-[#0a0a0a]">
+          <div className="bg-[#00D4FF] text-black px-4 py-2 flex items-center justify-between">
+            <span className="text-sm font-bold tracking-wide">TODAY&apos;S SCHEDULE</span>
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-bold">{calendarEvents.length}</span>
+              {!calendarNeedsAuth && (
+                <Clock className="w-4 h-4" />
+              )}
+            </div>
+          </div>
+          <div className="max-h-[40vh] overflow-y-auto">
+            {calendarLoading ? (
+              <div className="p-4 text-[#888] text-sm">LOADING CALENDAR...</div>
+            ) : calendarNeedsAuth ? (
+              <div className="p-4">
+                <p className="text-[#888] text-sm mb-3">Connect Google Calendar to see your meetings</p>
+                <a
+                  href="/api/google/auth"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#00D4FF] text-black text-sm font-bold hover:bg-[#00B8E0] transition-colors"
+                >
+                  <Calendar className="w-4 h-4" />
+                  CONNECT GOOGLE CALENDAR
+                </a>
+              </div>
+            ) : calendarEvents.length === 0 ? (
+              <div className="p-4 text-[#888] text-sm">NO MEETINGS TODAY</div>
+            ) : (
+              calendarEvents.map((event, i) => (
+                <div key={event.id} className={`border-b border-[#222] ${i % 2 === 0 ? 'bg-[#0a0a0a]' : 'bg-[#111]'}`}>
+                  <div
+                    className="px-4 py-3 cursor-pointer hover:bg-[#1a1a1a] transition-colors"
+                    onClick={() => setExpandedEventId(expandedEventId === event.id ? null : event.id)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <span className="text-[#00D4FF] text-xs font-medium whitespace-nowrap">
+                          {formatEventTime(event.start, event.end)}
+                        </span>
+                        <span className="text-white text-sm truncate">{event.title}</span>
+                      </div>
+                      <div className="flex items-center gap-2 ml-2">
+                        {event.meetLink && <Video className="w-4 h-4 text-[#00D46A]" />}
+                        {expandedEventId === event.id ? (
+                          <ChevronUp className="w-4 h-4 text-[#888]" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4 text-[#888]" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  {expandedEventId === event.id && (
+                    <div className="px-4 pb-3 space-y-2 border-t border-[#222] pt-2 bg-[#111]">
+                      {event.location && (
+                        <div className="flex items-center gap-2 text-xs text-[#888]">
+                          <MapPin className="w-3.5 h-3.5" />
+                          <span>{event.location}</span>
+                        </div>
+                      )}
+                      {event.meetLink && (
+                        <a
+                          href={event.meetLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 text-xs text-[#00D46A] hover:underline"
+                        >
+                          <Video className="w-3.5 h-3.5" />
+                          JOIN MEETING
+                        </a>
+                      )}
+                      {event.attendees && event.attendees.length > 0 && (
+                        <div className="flex items-start gap-2 text-xs text-[#888]">
+                          <Users className="w-3.5 h-3.5 mt-0.5" />
+                          <div className="flex flex-wrap gap-1">
+                            {event.attendees.slice(0, 5).map((a, idx) => (
+                              <span key={idx} className="bg-[#222] px-1.5 py-0.5 rounded">
+                                {a.name || a.email}
+                              </span>
+                            ))}
+                            {event.attendees.length > 5 && (
+                              <span className="text-[#888]">+{event.attendees.length - 5} more</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {event.description && (
+                        <p className="text-xs text-[#888] line-clamp-2">{event.description}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))
             )}
           </div>
         </div>
-        <div className="max-h-[30vh] overflow-y-auto">
-          {calendarLoading ? (
-            <div className="p-4 text-[#888] text-sm">LOADING CALENDAR...</div>
-          ) : calendarNeedsAuth ? (
-            <div className="p-4">
-              <p className="text-[#888] text-sm mb-3">Connect Google Calendar to see your meetings</p>
-              <a
-                href="/api/google/auth"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-[#00D4FF] text-black text-sm font-bold hover:bg-[#00B8E0] transition-colors"
-              >
-                <Calendar className="w-4 h-4" />
-                CONNECT GOOGLE CALENDAR
+
+        {/* Panel 2: Today's Tasks */}
+        <div className="border border-[#333] bg-[#0a0a0a]">
+          <div className="bg-[#00D46A] text-black px-4 py-2 flex items-center justify-between">
+            <span className="text-sm font-bold tracking-wide">TODAY&apos;S TASKS</span>
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-bold">{incompleteTasks.length}</span>
+              <a href="/today">
+                <ExternalLink className="w-4 h-4" />
               </a>
             </div>
-          ) : calendarEvents.length === 0 ? (
-            <div className="p-4 text-[#888] text-sm">NO MEETINGS TODAY</div>
-          ) : (
-            calendarEvents.map((event, i) => (
-              <div key={event.id} className={`border-b border-[#222] ${i % 2 === 0 ? 'bg-[#0a0a0a]' : 'bg-[#111]'}`}>
-                <div
-                  className="px-4 py-3 cursor-pointer hover:bg-[#1a1a1a] transition-colors"
-                  onClick={() => setExpandedEventId(expandedEventId === event.id ? null : event.id)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <span className="text-[#00D4FF] text-xs font-medium whitespace-nowrap">
-                        {formatEventTime(event.start, event.end)}
-                      </span>
-                      <span className="text-white text-sm truncate">{event.title}</span>
-                    </div>
-                    <div className="flex items-center gap-2 ml-2">
-                      {event.meetLink && <Video className="w-4 h-4 text-[#00D46A]" />}
-                      {expandedEventId === event.id ? (
-                        <ChevronUp className="w-4 h-4 text-[#888]" />
-                      ) : (
-                        <ChevronDown className="w-4 h-4 text-[#888]" />
-                      )}
+          </div>
+          <div className="max-h-[40vh] overflow-y-auto">
+            {tasksLoading ? (
+              <div className="p-4 text-[#888] text-sm">LOADING...</div>
+            ) : tasksError ? (
+              <div className="p-4 text-[#FF4444] text-sm">ERROR LOADING DATA</div>
+            ) : todayTasks.length === 0 ? (
+              <div className="p-4 text-[#888] text-sm">NO TASKS FOR TODAY</div>
+            ) : (
+              <>
+                {incompleteTasks.map((task, i) => (
+                  <div
+                    key={task.id}
+                    onClick={() => toggleTaskComplete(task)}
+                    className={`px-4 py-3 border-b border-[#222] cursor-pointer hover:bg-[#1a1a1a] ${i % 2 === 0 ? 'bg-[#0a0a0a]' : 'bg-[#111]'}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 border border-[#00D46A] flex-shrink-0" />
+                      <span className="text-white text-sm truncate">{task.title}</span>
                     </div>
                   </div>
-                </div>
-                {expandedEventId === event.id && (
-                  <div className="px-4 pb-3 space-y-2 border-t border-[#222] pt-2 bg-[#111]">
-                    {event.location && (
-                      <div className="flex items-center gap-2 text-xs text-[#888]">
-                        <MapPin className="w-3.5 h-3.5" />
-                        <span>{event.location}</span>
-                      </div>
-                    )}
-                    {event.meetLink && (
-                      <a
-                        href={event.meetLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-xs text-[#00D46A] hover:underline"
+                ))}
+                {completedTasks.length > 0 && (
+                  <>
+                    <div className="px-4 py-2 bg-[#111] text-[#888] text-xs border-b border-[#222]">
+                      COMPLETED ({completedTasks.length})
+                    </div>
+                    {completedTasks.slice(0, 3).map((task, i) => (
+                      <div
+                        key={task.id}
+                        onClick={() => toggleTaskComplete(task)}
+                        className={`px-4 py-3 border-b border-[#222] cursor-pointer hover:bg-[#1a1a1a] opacity-50 ${i % 2 === 0 ? 'bg-[#0a0a0a]' : 'bg-[#111]'}`}
                       >
-                        <Video className="w-3.5 h-3.5" />
-                        JOIN MEETING
-                      </a>
-                    )}
-                    {event.attendees && event.attendees.length > 0 && (
-                      <div className="flex items-start gap-2 text-xs text-[#888]">
-                        <Users className="w-3.5 h-3.5 mt-0.5" />
-                        <div className="flex flex-wrap gap-1">
-                          {event.attendees.slice(0, 5).map((a, idx) => (
-                            <span key={idx} className="bg-[#222] px-1.5 py-0.5 rounded">
-                              {a.name || a.email}
-                            </span>
-                          ))}
-                          {event.attendees.length > 5 && (
-                            <span className="text-[#888]">+{event.attendees.length - 5} more</span>
-                          )}
+                        <div className="flex items-center gap-3">
+                          <div className="w-4 h-4 bg-[#00D46A] flex-shrink-0 flex items-center justify-center text-black text-[10px] font-bold">✓</div>
+                          <span className="text-[#888] text-sm truncate line-through">{task.title}</span>
                         </div>
                       </div>
-                    )}
-                    {event.description && (
-                      <p className="text-xs text-[#888] line-clamp-2">{event.description}</p>
-                    )}
-                  </div>
+                    ))}
+                  </>
                 )}
-              </div>
-            ))
-          )}
+              </>
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Main Grid - Three Panels */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {/* Panel 1: Unscheduled Jobs */}
+        {/* Panel 3: Unscheduled Jobs */}
         <div className="border border-[#333] bg-[#0a0a0a]">
           <div className="bg-[#FF6600] text-black px-4 py-2 flex items-center justify-between">
             <span className="text-sm font-bold tracking-wide">UNSCHEDULED JOBS</span>
@@ -553,7 +609,7 @@ export default function CommandCenter() {
           </div>
         </div>
 
-        {/* Panel 2: Quote Follow-ups */}
+        {/* Panel 4: Quote Follow-ups */}
         <div className="border border-[#333] bg-[#0a0a0a]">
           <div className="bg-[#FF4444] text-black px-4 py-2 flex items-center justify-between">
             <span className="text-sm font-bold tracking-wide">FOLLOW-UPS</span>
@@ -616,61 +672,6 @@ export default function CommandCenter() {
           </div>
         </div>
 
-        {/* Panel 3: Today's Tasks */}
-        <div className="border border-[#333] bg-[#0a0a0a]">
-          <div className="bg-[#00D46A] text-black px-4 py-2 flex items-center justify-between">
-            <span className="text-sm font-bold tracking-wide">TODAY&apos;S TASKS</span>
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-bold">{incompleteTasks.length}</span>
-              <a href="/today">
-                <ExternalLink className="w-4 h-4" />
-              </a>
-            </div>
-          </div>
-          <div className="max-h-[40vh] overflow-y-auto">
-            {tasksLoading ? (
-              <div className="p-4 text-[#888] text-sm">LOADING...</div>
-            ) : tasksError ? (
-              <div className="p-4 text-[#FF4444] text-sm">ERROR LOADING DATA</div>
-            ) : todayTasks.length === 0 ? (
-              <div className="p-4 text-[#888] text-sm">NO TASKS FOR TODAY</div>
-            ) : (
-              <>
-                {incompleteTasks.map((task, i) => (
-                  <div
-                    key={task.id}
-                    onClick={() => toggleTaskComplete(task)}
-                    className={`px-4 py-3 border-b border-[#222] cursor-pointer hover:bg-[#1a1a1a] ${i % 2 === 0 ? 'bg-[#0a0a0a]' : 'bg-[#111]'}`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-4 h-4 border border-[#00D46A] flex-shrink-0" />
-                      <span className="text-white text-sm truncate">{task.title}</span>
-                    </div>
-                  </div>
-                ))}
-                {completedTasks.length > 0 && (
-                  <>
-                    <div className="px-4 py-2 bg-[#111] text-[#888] text-xs border-b border-[#222]">
-                      COMPLETED ({completedTasks.length})
-                    </div>
-                    {completedTasks.slice(0, 3).map((task, i) => (
-                      <div
-                        key={task.id}
-                        onClick={() => toggleTaskComplete(task)}
-                        className={`px-4 py-3 border-b border-[#222] cursor-pointer hover:bg-[#1a1a1a] opacity-50 ${i % 2 === 0 ? 'bg-[#0a0a0a]' : 'bg-[#111]'}`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-4 h-4 bg-[#00D46A] flex-shrink-0 flex items-center justify-center text-black text-[10px] font-bold">✓</div>
-                          <span className="text-[#888] text-sm truncate line-through">{task.title}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </>
-                )}
-              </>
-            )}
-          </div>
-        </div>
       </div>
 
       {/* Footer */}
