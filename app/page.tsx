@@ -82,6 +82,19 @@ interface CalendarEvent {
   attendees?: Array<{ email: string; name?: string; status?: string }>;
 }
 
+interface ScheduledJob {
+  id: string;
+  customerName: string;
+  address: string;
+  service: string;
+  serviceDetail: string;
+  time: string | null;
+  endTime: string | null;
+  status: string;
+  assignedTech: string[];
+  confirmed: boolean;
+}
+
 const WEATHER_API_KEY = '5fef1daf633f6e100c89a58c25220c72';
 const ZIP_CODE = '91103';
 
@@ -140,6 +153,8 @@ export default function CommandCenter() {
   const [calendarLoading, setCalendarLoading] = useState(true);
   const [calendarNeedsAuth, setCalendarNeedsAuth] = useState(false);
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
+  const [scheduledJobs, setScheduledJobs] = useState<ScheduledJob[]>([]);
+  const [scheduledJobsLoading, setScheduledJobsLoading] = useState(true);
 
   const supabase = createClient();
 
@@ -350,6 +365,24 @@ export default function CommandCenter() {
     fetchCalendarEvents();
   }, []);
 
+  // Fetch today's scheduled jobs
+  useEffect(() => {
+    async function fetchScheduledJobs() {
+      try {
+        const res = await fetch('/api/airtable/todays-jobs');
+        const data = await res.json();
+        if (data.jobs) {
+          setScheduledJobs(data.jobs);
+        }
+      } catch {
+        console.error('Failed to fetch scheduled jobs');
+      } finally {
+        setScheduledJobsLoading(false);
+      }
+    }
+    fetchScheduledJobs();
+  }, []);
+
   const formatEventTime = (start: string, end: string) => {
     const startDate = new Date(start);
     const endDate = new Date(end);
@@ -426,7 +459,7 @@ export default function CommandCenter() {
           <div className="bg-[#00D4FF] text-black px-4 py-2 flex items-center justify-between">
             <span className="text-sm font-bold tracking-wide">TODAY&apos;S SCHEDULE</span>
             <div className="flex items-center gap-3">
-              <span className="text-sm font-bold">{calendarEvents.length}</span>
+              <span className="text-sm font-bold">{calendarEvents.length + scheduledJobs.length}</span>
               {!calendarNeedsAuth && (
                 <Clock className="w-4 h-4" />
               )}
@@ -513,6 +546,43 @@ export default function CommandCenter() {
                   )}
                 </div>
               ))
+            )}
+            {/* Today's Scheduled Jobs */}
+            {scheduledJobsLoading ? (
+              <div className="p-4 text-[#888] text-sm border-t border-[#333]">LOADING JOBS...</div>
+            ) : scheduledJobs.length > 0 && (
+              <>
+                <div className="px-4 py-2 bg-[#111] text-[#FF6600] text-xs font-bold border-t border-[#333] flex items-center gap-2">
+                  <Wrench className="w-3.5 h-3.5" />
+                  WORK SCHEDULED ({scheduledJobs.length})
+                </div>
+                {scheduledJobs.map((job, i) => (
+                  <div key={job.id} className={`px-4 py-3 border-b border-[#222] ${i % 2 === 0 ? 'bg-[#0d0800]' : 'bg-[#111]'}`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        {job.time && (
+                          <span className="text-[#FF6600] text-xs font-medium whitespace-nowrap">
+                            {job.time}{job.endTime ? ` - ${job.endTime}` : ''}
+                          </span>
+                        )}
+                        <span className="text-white text-sm truncate">{job.customerName}</span>
+                      </div>
+                      <span className={`text-xs ml-2 ${job.status === 'Completed' ? 'text-[#00D46A]' : job.status === 'In Progress' ? 'text-[#00D4FF]' : 'text-[#888]'}`}>
+                        {job.status.toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 mt-1">
+                      <span className="text-[#FF6600] text-xs">{job.service}{job.serviceDetail ? ` - ${job.serviceDetail}` : ''}</span>
+                    </div>
+                    {job.address && (
+                      <div className="flex items-center gap-1.5 mt-1 text-[#888] text-xs">
+                        <MapPin className="w-3 h-3" />
+                        <span className="truncate">{job.address}</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </>
             )}
           </div>
         </div>

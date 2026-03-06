@@ -53,14 +53,14 @@ export async function GET() {
   }
 
   try {
-    // Get today's date range in local timezone
-    const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    // Get today's date in Los Angeles timezone
+    const laFormatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit' });
+    const todayLA = laFormatter.format(new Date()); // YYYY-MM-DD
 
     const params = new URLSearchParams({
-      timeMin: startOfDay.toISOString(),
-      timeMax: endOfDay.toISOString(),
+      timeMin: `${todayLA}T00:00:00`,
+      timeMax: `${todayLA}T23:59:59`,
+      timeZone: 'America/Los_Angeles',
       singleEvents: 'true',
       orderBy: 'startTime',
     });
@@ -103,8 +103,13 @@ export async function GET() {
         }
       }
 
-      // Clear invalid tokens
+      // Clear expired access token but keep refresh token for next attempt
       cookieStore.delete('google_access_token');
+      // Only clear refresh token if the refresh itself failed (token was revoked)
+      if (refreshToken) {
+        // Refresh token existed but failed — it may be revoked
+        cookieStore.delete('google_refresh_token');
+      }
       return NextResponse.json({ error: 'Token expired', needsAuth: true }, { status: 401 });
     }
 

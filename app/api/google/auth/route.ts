@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   const redirectUri = `${url.protocol}//${url.host}/api/google/callback`;
 
   const scope = encodeURIComponent('https://www.googleapis.com/auth/calendar.readonly');
-  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}&access_type=offline&prompt=consent`;
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}&access_type=offline&prompt=select_account`;
 
   return NextResponse.redirect(authUrl);
 }
