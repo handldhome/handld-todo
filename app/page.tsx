@@ -561,7 +561,7 @@ export default function CommandCenter() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         {job.time && (
-                          <span className="text-[#FF6600] text-xs font-medium whitespace-nowrap">
+                          <span className="text-[#00D4FF] text-xs font-medium whitespace-nowrap">
                             {job.time}{job.endTime ? ` - ${job.endTime}` : ''}
                           </span>
                         )}
