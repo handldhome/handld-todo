@@ -22,22 +22,8 @@ export async function middleware(request: NextRequest) {
   const key = searchParams.get('key');
   const keyFromCookie = request.cookies.get('handld_key')?.value;
 
-  // Valid key in URL - set cookie and continue
-  if (key && VALID_KEYS.includes(key)) {
-    const response = await updateSession(request);
-    response.cookies.set('handld_key', key, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 365 * 10, // 10 years
-    });
-    return response;
-  }
-
-  // Valid key in cookie - continue
-  if (keyFromCookie && VALID_KEYS.includes(keyFromCookie)) {
-    return await updateSession(request);
-  }
+  const hasValidKey = (key && VALID_KEYS.includes(key)) ||
+                      (keyFromCookie && VALID_KEYS.includes(keyFromCookie));
 
   // Invalid key in URL
   if (key && !VALID_KEYS.includes(key)) {
@@ -45,7 +31,21 @@ export async function middleware(request: NextRequest) {
   }
 
   // No key at all - unauthorized
-  return new NextResponse('Unauthorized - access commandcenter.handldhome.com?key=alia', { status: 401 });
+  if (!hasValidKey) {
+    return new NextResponse('Unauthorized - access commandcenter.handldhome.com?key=alia', { status: 401 });
+  }
+
+  // Valid key - proceed with session update and persist cookie
+  const response = await updateSession(request);
+  if (key) {
+    response.cookies.set('handld_key', key, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 365 * 10, // 10 years
+    });
+  }
+  return response;
 }
 
 export const config = {
