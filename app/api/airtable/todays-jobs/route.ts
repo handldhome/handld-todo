@@ -1,51 +1,51 @@
 import { NextResponse } from 'next/server';
-import { fetchAllAirtableRecords } from '@/lib/airtable/client';
+import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 
+const SCHEDULING_SUPABASE_URL = process.env.SCHEDULING_SUPABASE_URL;
+const SCHEDULING_SUPABASE_ANON_KEY = process.env.SCHEDULING_SUPABASE_ANON_KEY;
+
 // GET /api/airtable/todays-jobs
-// Returns jobs scheduled for today (Target Date = today, Status != "Cancelled")
+// Returns jobs scheduled for today from the scheduling Supabase (handld schema)
 export async function GET() {
+  if (!SCHEDULING_SUPABASE_URL || !SCHEDULING_SUPABASE_ANON_KEY) {
+    return NextResponse.json({ error: 'Scheduling database not configured' }, { status: 500 });
+  }
+
   try {
-    // Use Airtable's TODAY() function for timezone-consistent filtering
-    const formula = `AND(
-      IS_SAME({Target Date}, TODAY()),
-      {Status} != "Cancelled"
-    )`.replace(/\s+/g, ' ');
-
-    const records = await fetchAllAirtableRecords('Jobs', {
-      filterByFormula: formula,
-      sort: [{ field: 'Scheduled Time', direction: 'asc' }],
+    const supabase = createClient(SCHEDULING_SUPABASE_URL, SCHEDULING_SUPABASE_ANON_KEY, {
+      db: { schema: 'handld' },
     });
 
-    // Helper to extract first value from Airtable linked record fields (which are arrays)
-    const first = (val: unknown): string => {
-      if (Array.isArray(val)) return (val[0] as string) || '';
-      return (val as string) || '';
-    };
+    // Get today's date in LA timezone
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
 
-    const jobs = records.map(record => {
-      const street = first(record.fields['Street Address (from Quote ID) (from Quote Line Item)']) ||
-                     first(record.fields['Property Address']);
-      const city = first(record.fields['City']);
+    const { data, error } = await supabase
+      .from('vw_jobs')
+      .select('id, customer_name, service, service_detail, scheduled_time, scheduled_end, status, technician_id, confirmed')
+      .eq('target_date', today)
+      .neq('status', 'Cancelled')
+      .order('scheduled_time', { ascending: true });
 
-      return {
-        id: record.id,
-        customerName: first(record.fields['Customer']) || 'Unknown Customer',
-        address: [street, city].filter(Boolean).join(', '),
-        service: (record.fields['Service'] as string) || '',
-        serviceDetail: (record.fields['Service Detail'] as string) || '',
-        time: (record.fields['Scheduled Time'] as string) || null,
-        endTime: (record.fields['Scheduled End'] as string) || null,
-        status: (record.fields['Status'] as string) || '',
-        assignedTech: (record.fields['Assigned Technician'] as string[]) || [],
-        confirmed: (record.fields['Confirmed'] as boolean) || false,
-      };
-    });
+    if (error) throw error;
+
+    const jobs = (data || []).map(job => ({
+      id: job.id,
+      customerName: job.customer_name || 'Unknown Customer',
+      address: '',
+      service: job.service || '',
+      serviceDetail: job.service_detail || '',
+      time: job.scheduled_time ? job.scheduled_time.slice(0, 5) : null,
+      endTime: job.scheduled_end ? job.scheduled_end.slice(0, 5) : null,
+      status: job.status || '',
+      assignedTech: job.technician_id ? [job.technician_id] : [],
+      confirmed: job.confirmed || false,
+    }));
 
     return NextResponse.json({ jobs });
   } catch (error) {
-    console.error('Airtable todays-jobs error:', error);
+    console.error('Scheduling todays-jobs error:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
