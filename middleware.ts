@@ -35,9 +35,11 @@ export async function middleware(request: NextRequest) {
     return new NextResponse('Unauthorized - access commandcenter.handldhome.com?key=alia', { status: 401 });
   }
 
-  // Command Center (root page) only needs the key, not Supabase auth
-  const isCommandCenter = pathname === '/';
-  if (isCommandCenter) {
+  // Command Center and its API routes only need the key, not Supabase auth
+  const isKeyOnlyRoute = pathname === '/' ||
+                         pathname.startsWith('/api/airtable') ||
+                         pathname.startsWith('/api/google');
+  if (isKeyOnlyRoute) {
     const response = NextResponse.next({ request });
     if (key) {
       response.cookies.set('handld_key', key, {
