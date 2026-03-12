@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { getLocalToday } from '@/lib/dateUtils';
 import {
   Calendar,
+  Database,
   Briefcase,
   UserCheck,
   CheckSquare,
@@ -99,11 +100,12 @@ const WEATHER_API_KEY = '5fef1daf633f6e100c89a58c25220c72';
 const ZIP_CODE = '91103';
 
 const tools = [
+  { name: 'DATABASE', icon: Database, href: 'https://database.handldhome.com', key: 'd' },
   { name: 'SCHEDULE', icon: Calendar, href: 'https://schedule.handldhome.com/admin?key=alia&tab=schedule', key: 's' },
   { name: 'TECH SCHED', icon: Wrench, href: 'https://schedule.handldhome.com/admin?key=alia&tab=tech-schedules', key: 't' },
   { name: 'JOBS', icon: Briefcase, href: 'https://schedule.handldhome.com/admin?key=alia&tab=jobs', key: 'j' },
   { name: 'AVAIL', icon: UserCheck, href: 'https://schedule.handldhome.com/admin?key=alia&tab=availability', key: 'a' },
-  { name: 'TODO', icon: CheckSquare, href: '/today', key: 'd' },
+  { name: 'TODO', icon: CheckSquare, href: '/today', key: 'o' },
   { name: 'WEBSITE', icon: Globe, href: 'https://handldhome.com', key: 'w' },
   { name: 'PRO', icon: Rocket, href: 'https://pro.handldhome.com/admin', key: 'p' },
 ];
