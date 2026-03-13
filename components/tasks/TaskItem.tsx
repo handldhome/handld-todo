@@ -1,6 +1,6 @@
 'use client';
 
-import { Calendar, ListChecks, Star } from 'lucide-react';
+import { Calendar, ChevronRight, ListChecks, Star } from 'lucide-react';
 import { formatDueDate, isOverdue } from '@/lib/dateUtils';
 import type { Task } from '@/types';
 
@@ -32,8 +32,8 @@ export function TaskItem({
     <div
       onClick={onSelect}
       className={`
-        flex items-center gap-3 px-4 py-3 cursor-pointer border-l-2
-        transition-colors
+        flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3.5 sm:py-3 cursor-pointer border-l-2
+        transition-colors active:bg-[#1a1a1a]
         ${isSelected
           ? 'bg-[#1a1a1a] border-[#FF6600]'
           : 'border-transparent hover:bg-[#111]'
@@ -77,12 +77,13 @@ export function TaskItem({
         {/* Due date */}
         {showDueDate && task.due_date && !task.is_completed && (
           <span
-            className={`hidden sm:flex items-center gap-1 text-xs ${
+            className={`flex items-center gap-1 text-[10px] sm:text-xs ${
               isOverdue(task.due_date) ? 'text-[#FF4444]' : 'text-[#888]'
             }`}
           >
-            <Calendar className="w-3.5 h-3.5" />
-            {formatDueDate(task.due_date).toUpperCase()}
+            <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            <span className="hidden sm:inline">{formatDueDate(task.due_date).toUpperCase()}</span>
+            <span className="sm:hidden">{formatDueDate(task.due_date).toUpperCase().replace('TOMORROW', 'TMR').replace('YESTERDAY', 'YEST')}</span>
           </span>
         )}
 
@@ -100,7 +101,7 @@ export function TaskItem({
             e.stopPropagation();
             onToggleStar();
           }}
-          className="p-0.5"
+          className="p-1.5 -mr-1"
         >
           <Star
             className={`w-4 h-4 ${
@@ -110,6 +111,9 @@ export function TaskItem({
             }`}
           />
         </button>
+
+        {/* Mobile chevron */}
+        <ChevronRight className="w-4 h-4 text-[#333] md:hidden" />
       </div>
     </div>
   );

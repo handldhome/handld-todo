@@ -39,8 +39,6 @@ import {
   Plus,
   Settings,
   LogOut,
-  Menu,
-  X,
   Keyboard,
   GripVertical,
   LayoutGrid,
@@ -401,14 +399,6 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Mobile menu button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-2 left-2 z-50 p-2 bg-[#111] border border-[#333] md:hidden"
-      >
-        {isOpen ? <X className="w-5 h-5 text-[#FF6600]" /> : <Menu className="w-5 h-5 text-[#FF6600]" />}
-      </button>
-
       {/* Overlay */}
       {isOpen && (
         <div className="fixed inset-0 bg-black/80 z-30 md:hidden" onClick={closeSidebar} />

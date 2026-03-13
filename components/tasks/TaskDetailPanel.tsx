@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import {
   X,
+  ArrowLeft,
   Calendar,
   FileText,
   Trash2,
@@ -200,32 +201,49 @@ export function TaskDetailPanel({
   };
 
   return (
-    <motion.div
-      initial={{ x: '100%' }}
-      animate={{ x: 0 }}
-      exit={{ x: '100%' }}
-      transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-      style={{
-        width: '400px',
-        height: '100%',
-        backgroundColor: COLORS.dark,
-        borderLeft: `1px solid ${COLORS.border}`,
-        display: 'flex',
-        flexDirection: 'column',
-        flexShrink: 0,
-        color: COLORS.white,
-        fontFamily: "'SF Mono', Monaco, Consolas, monospace",
-      }}
-    >
+    <>
+      {/* Mobile backdrop */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="fixed inset-0 bg-black/60 z-40 md:hidden"
+      />
+      <motion.div
+        initial={{ x: '100%' }}
+        animate={{ x: 0 }}
+        exit={{ x: '100%' }}
+        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+        className="fixed inset-0 z-50 md:relative md:inset-auto md:z-auto md:w-[400px]"
+        style={{
+          backgroundColor: COLORS.dark,
+          borderLeft: `1px solid ${COLORS.border}`,
+          display: 'flex',
+          flexDirection: 'column',
+          flexShrink: 0,
+          color: COLORS.white,
+          fontFamily: "'SF Mono', Monaco, Consolas, monospace",
+        }}
+      >
       {/* Header */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         gap: '12px',
-        padding: '16px',
+        padding: '12px 16px',
         borderBottom: `1px solid ${COLORS.border}`,
         backgroundColor: COLORS.panel,
       }}>
+        {/* Back/Close button */}
+        <button
+          onClick={onClose}
+          className="p-2 -ml-2 md:hidden"
+          style={{ cursor: 'pointer', background: 'none', border: 'none' }}
+        >
+          <ArrowLeft size={22} color={COLORS.orange} />
+        </button>
+
         {/* Checkbox */}
         <button
           onClick={() => onUpdate({
@@ -267,7 +285,8 @@ export function TaskDetailPanel({
         {/* Star */}
         <button
           onClick={() => onUpdate({ is_starred: !task.is_starred })}
-          style={{ padding: '4px', cursor: 'pointer', background: 'none', border: 'none' }}
+          className="p-2"
+          style={{ cursor: 'pointer', background: 'none', border: 'none' }}
         >
           <Star
             size={18}
@@ -276,10 +295,11 @@ export function TaskDetailPanel({
           />
         </button>
 
-        {/* Close */}
+        {/* Close (desktop only) */}
         <button
           onClick={onClose}
-          style={{ padding: '4px', cursor: 'pointer', background: 'none', border: 'none' }}
+          className="hidden md:block p-1"
+          style={{ cursor: 'pointer', background: 'none', border: 'none' }}
         >
           <X size={20} color={COLORS.gray} />
         </button>
@@ -512,5 +532,6 @@ export function TaskDetailPanel({
         </p>
       </div>
     </motion.div>
+    </>
   );
 }

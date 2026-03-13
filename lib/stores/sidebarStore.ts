@@ -9,7 +9,7 @@ interface SidebarState {
 }
 
 export const useSidebarStore = create<SidebarState>((set) => ({
-  isOpen: true,
+  isOpen: false,
   selectedTaskId: null,
   setIsOpen: (isOpen) => set({ isOpen }),
   toggle: () => set((state) => ({ isOpen: !state.isOpen })),
