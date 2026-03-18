@@ -4,9 +4,14 @@ import { fetchAllAirtableRecords, updateAirtableRecord } from '@/lib/airtable/cl
 import { getLocalToday } from '@/lib/dateUtils';
 
 // Create a Supabase client with service role for server-side operations
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+function getSupabase() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error('Supabase URL and key are required');
+  }
+  return createClient(supabaseUrl, supabaseServiceKey);
+}
 
 interface SyncResult {
   created: number;
@@ -19,6 +24,7 @@ interface SyncResult {
 // Syncs pending quote follow-ups to tasks and syncs completed tasks back to Airtable
 export async function POST(request: Request) {
   try {
+    const supabase = getSupabase();
     const body = await request.json().catch(() => ({}));
     const userId = body.userId;
 
@@ -211,6 +217,7 @@ export async function GET(request: Request) {
   }
 
   try {
+    const supabase = getSupabase();
     const { data: syncs, error } = await supabase
       .from('airtable_sync')
       .select(`

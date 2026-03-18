@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server';
-import { fetchAllAirtableRecords } from '@/lib/airtable/client';
+import { createClient } from '@supabase/supabase-js';
+
+export const dynamic = 'force-dynamic';
+
+const SCHEDULING_SUPABASE_URL = process.env.SCHEDULING_SUPABASE_URL;
+const SCHEDULING_SUPABASE_ANON_KEY = process.env.SCHEDULING_SUPABASE_ANON_KEY;
 
 export interface PendingQuote {
   id: string;
@@ -14,40 +19,47 @@ export interface PendingQuote {
 }
 
 // GET /api/airtable/pending-quotes
-// Returns quote requests where Quote Approved = false and Last Modified > 1 hour ago
+// Returns quote requests where quote_approved is false/null, updated within last 7 days
 export async function GET() {
+  if (!SCHEDULING_SUPABASE_URL || !SCHEDULING_SUPABASE_ANON_KEY) {
+    return NextResponse.json({ error: 'Scheduling database not configured' }, { status: 500 });
+  }
+
   try {
+    const supabase = createClient(SCHEDULING_SUPABASE_URL, SCHEDULING_SUPABASE_ANON_KEY, {
+      db: { schema: 'handld' },
+    });
+
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     const oneHourAgo = new Date();
     oneHourAgo.setHours(oneHourAgo.getHours() - 1);
 
-    // Airtable formula: Quote Approved is false/empty AND Last Modified within past week but > 1 hour ago
-    // Note: Airtable's LAST_MODIFIED_TIME() returns the record's last modified time
-    const formula = `AND(
-      OR({Quote Approved} = FALSE(), {Quote Approved} = BLANK()),
-      DATETIME_DIFF(NOW(), LAST_MODIFIED_TIME(), 'hours') >= 1,
-      DATETIME_DIFF(NOW(), LAST_MODIFIED_TIME(), 'days') <= 7
-    )`.replace(/\s+/g, ' ');
+    const { data, error } = await supabase
+      .from('vw_quote_requests')
+      .select('id, quote_id, quote_approved, customer_name, customer_phone, customer_email, quote_link, updated_at')
+      .or('quote_approved.is.null,quote_approved.eq.false')
+      .gte('updated_at', sevenDaysAgo.toISOString())
+      .lte('updated_at', oneHourAgo.toISOString())
+      .order('updated_at', { ascending: false });
 
-    const records = await fetchAllAirtableRecords('Quote Requests', {
-      filterByFormula: formula,
-      sort: [{ field: 'Last Modified', direction: 'desc' }],
-    });
+    if (error) throw error;
 
     const now = new Date();
-    const quotes: PendingQuote[] = records.map(record => {
-      const lastModified = (record.fields['Last Modified'] as string) || record.createdTime;
+    const quotes: PendingQuote[] = (data || []).map(record => {
+      const lastModified = record.updated_at || '';
       const lastModifiedDate = new Date(lastModified);
       const hoursAgo = Math.floor((now.getTime() - lastModifiedDate.getTime()) / (1000 * 60 * 60));
 
       return {
         id: record.id,
-        customerName: (record.fields['Customer Name'] as string) || 'Unknown Customer',
-        phoneNumber: (record.fields['Customer Phone'] as string) || '',
-        email: (record.fields['Email'] as string) || '',
-        quoteLink: (record.fields['Quote Link'] as string) || '',
+        customerName: record.customer_name || 'Unknown Customer',
+        phoneNumber: record.customer_phone || '',
+        email: record.customer_email || '',
+        quoteLink: record.quote_link || record.quote_id || '',
         lastModified,
         hoursAgo,
-        createdTime: record.createdTime,
+        createdTime: record.updated_at || '',
         airtableRecordId: record.id,
       };
     });
@@ -57,7 +69,7 @@ export async function GET() {
       quotes,
     });
   } catch (error) {
-    console.error('Airtable pending quotes error:', error);
+    console.error('Supabase pending quotes error:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
