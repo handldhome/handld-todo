@@ -11,8 +11,13 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const redirectUri = `${url.protocol}//${url.host}/api/google/callback`;
 
+  // Carry the Command Center key through OAuth state so the post-callback
+  // redirect can re-attach ?key=, surviving cookie loss across the round-trip.
+  const key = url.searchParams.get('key') || request.cookies.get('handld_key')?.value || '';
+
   const scope = encodeURIComponent('https://www.googleapis.com/auth/calendar.readonly');
-  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}&access_type=offline&prompt=select_account`;
+  const stateParam = key ? `&state=${encodeURIComponent(key)}` : '';
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}&access_type=offline&prompt=select_account${stateParam}`;
 
   return NextResponse.redirect(authUrl);
 }

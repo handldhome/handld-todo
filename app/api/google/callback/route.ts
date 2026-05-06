@@ -8,21 +8,23 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get('code');
   const error = searchParams.get('error');
+  const state = searchParams.get('state') || '';
+  const keyQuery = state ? `&key=${encodeURIComponent(state)}` : '';
 
   // Build redirect URI from the request URL
   const url = new URL(request.url);
   const redirectUri = `${url.protocol}//${url.host}/api/google/callback`;
 
   if (error) {
-    return NextResponse.redirect(new URL('/?google_error=' + error, request.url));
+    return NextResponse.redirect(new URL(`/?google_error=${error}${keyQuery}`, request.url));
   }
 
   if (!code) {
-    return NextResponse.redirect(new URL('/?google_error=no_code', request.url));
+    return NextResponse.redirect(new URL(`/?google_error=no_code${keyQuery}`, request.url));
   }
 
   if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
-    return NextResponse.redirect(new URL('/?google_error=not_configured', request.url));
+    return NextResponse.redirect(new URL(`/?google_error=not_configured${keyQuery}`, request.url));
   }
 
   try {
@@ -43,7 +45,7 @@ export async function GET(request: NextRequest) {
 
     if (tokens.error) {
       console.error('Token error:', tokens);
-      return NextResponse.redirect(new URL('/?google_error=token_error', request.url));
+      return NextResponse.redirect(new URL(`/?google_error=token_error${keyQuery}`, request.url));
     }
 
     // Store tokens in secure HTTP-only cookies
@@ -65,9 +67,9 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    return NextResponse.redirect(new URL('/?google_connected=true', request.url));
+    return NextResponse.redirect(new URL(`/?google_connected=true${keyQuery}`, request.url));
   } catch (error) {
     console.error('OAuth callback error:', error);
-    return NextResponse.redirect(new URL('/?google_error=callback_failed', request.url));
+    return NextResponse.redirect(new URL(`/?google_error=callback_failed${keyQuery}`, request.url));
   }
 }
