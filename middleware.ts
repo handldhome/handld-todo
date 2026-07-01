@@ -12,7 +12,7 @@ export async function middleware(request: NextRequest) {
                         pathname.startsWith('/signup') ||
                         pathname.startsWith('/auth') ||
                         pathname.startsWith('/_next') ||
-                        pathname.startsWith('/api/') && !pathname.startsWith('/api/airtable');
+                        pathname.startsWith('/api/') && !pathname.startsWith('/api/airtable') && !pathname.startsWith('/api/google');
 
   if (isPublicRoute) {
     return await updateSession(request);

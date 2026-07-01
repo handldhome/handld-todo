@@ -4,11 +4,9 @@
  * Get today's date in YYYY-MM-DD format using local timezone
  */
 export function getLocalToday(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  // en-CA formats as YYYY-MM-DD. Pin to LA so the result is consistent whether
+  // this runs in the browser or on a UTC server (e.g. Vercel).
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
 }
 
 /**

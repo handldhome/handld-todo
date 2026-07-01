@@ -16,7 +16,8 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
 
   const getAudioContext = useCallback(() => {
     if (!audioContextRef.current) {
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const Ctx = window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      audioContextRef.current = new Ctx();
     }
     return audioContextRef.current;
   }, []);

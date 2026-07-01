@@ -12,7 +12,7 @@ export async function GET() {
   const baseIdValue = baseId || 'NOT SET';
 
   // Try a simple Airtable request
-  let airtableTest = { success: false, error: '', statusCode: 0 };
+  const airtableTest = { success: false, error: '', statusCode: 0 };
 
   if (hasApiKey && hasBaseId) {
     try {
